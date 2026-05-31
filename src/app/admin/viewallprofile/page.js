@@ -1,137 +1,151 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { AdminPanel, AdminShell } from "../_components/AdminShell";
+
+const roleOrder = ["sales head", "Lead filler", "Sales Employee", "Inventory Manager", "Stock Filler", "Service Engineer", "Engineer"];
 
 const Viewallprofile = () => {
-  const token = localStorage.getItem('admintokens');
-
-    if (!token) {
-    alert("No token found. Please login as an admin.");
-    return null;
-  }
-
   const [profileData, setProfileData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    setLoading(true);
+    const token = localStorage.getItem("admintokens");
+    if (!token) {
+      setError("No token found. Please login as an admin.");
+      setLoading(false);
+      return;
+    }
 
-    axios.get('http://localhost:5005/api/adminviewallprofile', {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'multipart/form-data',
-      }
-    })
-    .then(response => {
-      console.log(response.data);
+    axios
+      .get("http://localhost:5005/api/adminviewallprofile", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      })
+      .then((response) => {
+        if (response.data && response.data.getallprofile) {
+          setProfileData(response.data.getallprofile);
+        } else {
+          setError("Unexpected response data");
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching profile data:", error);
+        setError("Error fetching profile data");
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
-      if (response.data && response.data.getallprofile) {
-        setProfileData(response.data.getallprofile);
-      } else {
-        setError('Unexpected response data');
-      }
-    })
-    .catch(error => {
-      console.error('Error fetching profile data:', error);
-      setError('Error fetching profile data');
-    })
-    .finally(() => setLoading(false));
-  }, [token]);
+  const groupedProfiles = profileData.reduce((groups, profile) => {
+    const role = profile.role || "Other";
+    if (!groups[role]) groups[role] = [];
+    groups[role].push(profile);
+    return groups;
+  }, {});
 
-  if (loading) return <div className="text-center text-green-600">Loading...</div>;
-
-  if (error) return <div className="text-center text-red-600">{error}</div>;
+  const orderedRoles = [
+    ...roleOrder.filter((role) => groupedProfiles[role]),
+    ...Object.keys(groupedProfiles).filter((role) => !roleOrder.includes(role)),
+  ];
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-teal-100 to-teal-300 p-4 sm:p-6">
-    <div className="w-full max-w-6xl p-4 sm:p-6 md:p-8 space-y-6 bg-white rounded-xl shadow-xl">
-      {profileData.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {profileData.map((profile, index) => {
-            const fileUrl = `http://localhost:5005/api/uploads/${profile.Fileupload}`;
-            const profileImg = profile.profileimg
-              ? `http://localhost:5005/api/uploads/${profile.profileimg}`
-              : "";
-  
-            return (
-              <div
-                key={index}
-                className="bg-white p-4 sm:p-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out"
-              >
-                <div className="text-center mb-4">
-                  {profileImg && (
-                    <img
-                      src={profileImg}
-                      alt="Profile"
-                      className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-full border-4 border-teal-300 mx-auto mb-4 shadow-lg"
-                    />
-                  )}
-                  <h2 className="text-xl sm:text-2xl font-semibold text-gray-800">
-                    {profile.name}
-                  </h2>
-                  <p className="text-xs sm:text-sm text-gray-500">
-                    {profile.email}
-                  </p>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full text-left">
-                    <tbody>
-                      <tr>
-                        <td className="py-2 px-3 font-medium text-gray-600">
-                          E-Id
+    <AdminShell title="Employees" subtitle="View employee profiles, documents, roles, and contact information.">
+      <div className="grid gap-4 md:grid-cols-3">
+        <Metric label="Employees" value={profileData.length} />
+        <Metric label="Roles" value={orderedRoles.length} />
+        <Metric label="With Documents" value={profileData.filter((profile) => profile.Fileupload).length} />
+      </div>
+
+      <AdminPanel title="Employee Directory" subtitle="Employees are grouped by role for quicker admin review.">
+        {loading && <div className="py-12 text-center text-sm text-slate-500">Loading employee profiles...</div>}
+        {!loading && error && <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+        {!loading && !error && profileData.length === 0 && (
+          <div className="py-12 text-center text-sm text-slate-500">No profiles available.</div>
+        )}
+        {!loading && !error && orderedRoles.map((role) => (
+          <section key={role} className="mb-8 last:mb-0">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-700">{role}</h3>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                {groupedProfiles[role].length} employees
+              </span>
+            </div>
+            <div className="overflow-x-auto rounded-lg border border-slate-200">
+              <table className="min-w-full text-left text-sm">
+                <thead className="bg-slate-100 text-xs uppercase tracking-wide text-slate-600">
+                  <tr>
+                    <th className="px-4 py-3">Employee</th>
+                    <th className="px-4 py-3">E-ID</th>
+                    <th className="px-4 py-3">Contact</th>
+                    <th className="px-4 py-3">Joining</th>
+                    <th className="px-4 py-3">Document</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {groupedProfiles[role].map((profile) => {
+                    const fileUrl = profile.Fileupload ? `http://localhost:5005/api/uploads/${profile.Fileupload}` : null;
+                    const profileImg = profile.profileimg ? `http://localhost:5005/api/uploads/${profile.profileimg}` : "";
+
+                    return (
+                      <tr key={profile._id || profile.Eid || profile.email} className="hover:bg-slate-50">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 overflow-hidden rounded-full bg-slate-100">
+                              {profileImg ? (
+                                <img src={profileImg} alt={profile.name || "Employee"} className="h-full w-full object-cover" />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-slate-500">
+                                  {String(profile.name || "?").slice(0, 1).toUpperCase()}
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <div className="font-medium text-slate-950">{profile.name || "N/A"}</div>
+                              <div className="text-xs text-slate-500">{profile.email || "N/A"}</div>
+                            </div>
+                          </div>
                         </td>
-                        <td className="py-2 px-3 text-gray-700">
-                          {profile.Eid}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="py-2 px-3 font-medium text-gray-600">
-                          Name
-                        </td>
-                        <td className="py-2 px-3 text-gray-700">
-                          {profile.name}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="py-2 px-3 font-medium text-gray-600">
-                          E-mail
-                        </td>
-                        <td className="py-2 px-3 text-gray-700">
-                          {profile.email}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="py-2 px-3 font-medium text-gray-600">
-                          First PDF
-                        </td>
-                        <td className="py-2 px-3">
-                          <a
-                            href={fileUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-teal-600 hover:text-teal-800"
-                          >
-                            Open PDF
-                          </a>
+                        <td className="px-4 py-3 font-medium text-slate-700">{profile.Eid || "N/A"}</td>
+                        <td className="px-4 py-3 text-slate-600">{profile.contactnumber || "N/A"}</td>
+                        <td className="px-4 py-3 text-slate-600">{formatDate(profile.JOD)}</td>
+                        <td className="px-4 py-3">
+                          {fileUrl ? (
+                            <a href={fileUrl} target="_blank" rel="noreferrer" className="font-medium text-teal-700 hover:text-teal-900">
+                              Open file
+                            </a>
+                          ) : (
+                            <span className="text-slate-400">No file</span>
+                          )}
                         </td>
                       </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="text-center text-gray-600 text-base sm:text-lg py-10">
-          No profiles available.
-        </div>
-      )}
-    </div>
-  </div>
-  
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        ))}
+      </AdminPanel>
+    </AdminShell>
   );
 };
+
+function Metric({ label, value }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="mt-2 text-2xl font-semibold text-slate-950">{value}</p>
+    </div>
+  );
+}
+
+function formatDate(value) {
+  if (!value) return "N/A";
+  return new Date(value).toLocaleDateString();
+}
 
 export default Viewallprofile;

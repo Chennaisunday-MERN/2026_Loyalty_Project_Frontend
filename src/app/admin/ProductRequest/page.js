@@ -1,20 +1,20 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { ChevronLeft, Loader2, AlertCircle } from "lucide-react";
-import { useRouter } from 'next/navigation';
+import { AlertCircle, Loader2 } from "lucide-react";
+import { AdminPanel, AdminShell } from "../_components/AdminShell";
 
 const ProductRequests = () => {
   const [productRequests, setProductRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const router = useRouter();
 
   useEffect(() => {
     const fetchProductRequests = async () => {
       try {
         const response = await axios.get("http://localhost:5005/api/productrequests");
-        setProductRequests(response.data.productRequests);
+        setProductRequests(response.data.productRequests || []);
       } catch (err) {
         setError("Error fetching product requests");
         console.error("Error fetching product requests:", err);
@@ -25,128 +25,138 @@ const ProductRequests = () => {
     fetchProductRequests();
   }, []);
 
-  const getStatusColor = (status) => {
-    switch(status?.toLowerCase()) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'approved': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      default: return 'bg-blue-100 text-blue-800';
-    }
-  };
+  const counts = productRequests.reduce(
+    (summary, request) => {
+      const status = String(request.Status || "other").toLowerCase();
+      summary.total += 1;
+      summary[status] = (summary[status] || 0) + 1;
+      return summary;
+    },
+    { total: 0, pending: 0, approved: 0, rejected: 0 }
+  );
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen bg-gray-50">
-        <div className="flex flex-col items-center">
-          <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
-          <p className="mt-4 text-gray-600 font-medium">Loading requests...</p>
-        </div>
-      </div>
+      <AdminShell title="Product Requests" subtitle="Review requested products and quantities from the team.">
+        <AdminPanel>
+          <div className="flex items-center justify-center gap-3 py-16 text-slate-600">
+            <Loader2 className="h-5 w-5 animate-spin text-slate-900" />
+            Loading requests...
+          </div>
+        </AdminPanel>
+      </AdminShell>
     );
   }
 
   if (error) {
     return (
-      <div className="flex justify-center items-center h-screen bg-gray-50">
-        <div className="flex flex-col items-center">
-          <AlertCircle className="h-12 w-12 text-red-500" />
-          <p className="mt-4 text-lg font-medium text-gray-800">{error}</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
+      <AdminShell title="Product Requests" subtitle="Review requested products and quantities from the team.">
+        <AdminPanel>
+          <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+            <AlertCircle className="h-8 w-8 text-red-500" />
+            <p className="text-sm font-medium text-slate-800">{error}</p>
+            <button onClick={() => window.location.reload()} className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">
+              Try Again
+            </button>
+          </div>
+        </AdminPanel>
+      </AdminShell>
     );
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center mb-8">
-          <button
-            onClick={() => router.push('/admin/adminDasboard')}
-            className="inline-flex items-center px-4 py-2 mb-6 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
->
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="h-5 w-5 mr-2"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-  </svg>
-  Back
-</button>
-          <h1 className="ml-4 text-3xl font-bold text-gray-900">Product Requests</h1>
-        </div>
-
-        {productRequests.length === 0 ? (
-          <div className="flex flex-col items-center justify-center bg-white rounded-xl shadow-sm p-12">
-            <p className="text-xl text-gray-500">No product requests found.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {productRequests.map((request) => (
-              <div
-                key={request._id}
-                className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 border border-gray-100"
-              >
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-xl font-bold text-gray-900">{request.name}</h3>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(request.Status)}`}>
-                      {request.Status}
-                    </span>
-                  </div>
-                  
-                  <div className="space-y-2 mb-6">
-                    <p className="text-gray-600 flex items-center">
-                      <span className="font-medium text-gray-700 w-32">Email:</span> 
-                      <span>{request.email}</span>
-                    </p>
-                    <p className="text-gray-600 flex items-center">
-                      <span className="font-medium text-gray-700 w-32">Company:</span> 
-                      <span>{request.companyName}</span>
-                    </p>
-                    <p className="text-gray-600 flex items-center">
-                      <span className="font-medium text-gray-700 w-32">Contact Person:</span> 
-                      <span>{request.contactpersonname}</span>
-                    </p>
-                    <p className="text-gray-600 flex items-center">
-                      <span className="font-medium text-gray-700 w-32">Employee ID:</span> 
-                      <span>{request.Employeeid}</span>
-                    </p>
-                  </div>
-                  
-                  <div className="mb-4">
-                    <h4 className="text-lg font-semibold text-gray-800 mb-2">Description</h4>
-                    <p className="text-gray-600 bg-gray-50 p-3 rounded-lg">{request.Description}</p>
-                  </div>
-                  
-                  <div>
-                    <h4 className="text-lg font-semibold text-gray-800 mb-2">Products Requested</h4>
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      {request.productDetails.map((product, index) => (
-                        <div key={index} className="flex justify-between items-center py-2 border-b last:border-0 border-gray-200">
-                          <span className="font-medium">{product.productname}</span>
-                          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">{product.quantity} units</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+    <AdminShell title="Product Requests" subtitle="Review requested products and quantities from the team.">
+      <div className="grid gap-4 md:grid-cols-4">
+        <Metric label="Total" value={counts.total} tone="slate" />
+        <Metric label="Pending" value={counts.pending} tone="amber" />
+        <Metric label="Approved" value={counts.approved} tone="emerald" />
+        <Metric label="Rejected" value={counts.rejected} tone="red" />
       </div>
-    </div>
+
+      <AdminPanel title="Request List" subtitle={`${productRequests.length} product requests found`}>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-slate-100 text-xs uppercase tracking-wide text-slate-600">
+              <tr>
+                <th className="px-4 py-3">Requester</th>
+                <th className="px-4 py-3">Company</th>
+                <th className="px-4 py-3">Employee ID</th>
+                <th className="px-4 py-3">Products</th>
+                <th className="px-4 py-3">Description</th>
+                <th className="px-4 py-3">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {productRequests.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="px-4 py-10 text-center text-slate-500">No product requests found.</td>
+                </tr>
+              ) : (
+                productRequests.map((request) => (
+                  <tr key={request._id} className="align-top hover:bg-slate-50">
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-slate-950">{request.name || "N/A"}</div>
+                      <div className="text-xs text-slate-500">{request.email || "N/A"}</div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-slate-900">{request.companyName || "N/A"}</div>
+                      <div className="text-xs text-slate-500">{request.contactpersonname || "N/A"}</div>
+                    </td>
+                    <td className="px-4 py-3 text-slate-700">{request.Employeeid || "N/A"}</td>
+                    <td className="px-4 py-3">
+                      <div className="space-y-2">
+                        {(request.productDetails || []).map((product, index) => (
+                          <div key={index} className="flex min-w-48 items-center justify-between gap-3 rounded-md bg-slate-50 px-3 py-2">
+                            <span className="font-medium text-slate-800">{product.productname || "Product"}</span>
+                            <span className="rounded-full bg-teal-50 px-2 py-1 text-xs font-semibold text-teal-700">{product.quantity || 0} units</span>
+                          </div>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="max-w-xs px-4 py-3 text-slate-600">{request.Description || "N/A"}</td>
+                    <td className="px-4 py-3">
+                      <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${getStatusClass(request.Status)}`}>
+                        {request.Status || "N/A"}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </AdminPanel>
+    </AdminShell>
   );
 };
+
+function Metric({ label, value, tone }) {
+  const tones = {
+    slate: "border-slate-200 bg-white text-slate-950",
+    amber: "border-amber-200 bg-amber-50 text-amber-800",
+    emerald: "border-emerald-200 bg-emerald-50 text-emerald-800",
+    red: "border-red-200 bg-red-50 text-red-800",
+  };
+
+  return (
+    <div className={`rounded-lg border p-4 shadow-sm ${tones[tone] || tones.slate}`}>
+      <p className="text-xs font-semibold uppercase tracking-wide opacity-70">{label}</p>
+      <p className="mt-2 text-2xl font-semibold">{value}</p>
+    </div>
+  );
+}
+
+function getStatusClass(status) {
+  switch (String(status || "").toLowerCase()) {
+    case "pending":
+      return "border-amber-200 bg-amber-50 text-amber-700";
+    case "approved":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    case "rejected":
+      return "border-red-200 bg-red-50 text-red-700";
+    default:
+      return "border-slate-200 bg-slate-50 text-slate-700";
+  }
+}
 
 export default ProductRequests;

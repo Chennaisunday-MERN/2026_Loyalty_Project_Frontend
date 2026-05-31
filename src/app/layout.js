@@ -45,29 +45,27 @@ export default function RootLayout({ children }) {
 
   return (
     <html lang="en">
-    <body className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}>
-      {/* Sticky Navigation Bar */}
-      <header className="sticky top-0 left-0 right-0 flex items-center justify-between p-4 bg-white z-50 shadow-md">
-        {/* Logo */}
-        <img src="/logo123.png" alt="Logo" className="max-w-[200px] h-auto" />
-  
-        {/* Company Name: Hidden on mobile, centered on larger screens */}
-        <div className="hidden sm:flex text-xl sm:text-2xl md:text-3xl font-bold flex-grow text-center justify-center w-full">
-          LOYALTY AUTOMATION PVT LTD
-        </div>
-  
-        {/* Logout Button: Adjusted size for mobile */}
-        <div className="px-4 py-2 text-white bg-red-600 rounded-md hover:bg-red-700 transition duration-300 text-sm sm:text-base">
-          <Logout />
-        </div>
-      </header>
-  
-      {/* Main Content */}
-      <main className="flex-grow overflow-y-auto px-4 py-6">
-        {children}
-      </main>
-    </body>
-  </html>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased flex min-h-screen flex-col bg-slate-50 text-slate-900`}>
+        <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
+            <div className="flex items-center gap-3">
+              <img src="/logo123.png" alt="Loyalty Automation" className="h-12 w-auto max-w-[170px] object-contain" />
+              <div className="hidden sm:block">
+                <div className="text-sm font-semibold uppercase tracking-wide text-slate-900">Loyalty Automation Pvt Ltd</div>
+                <div className="text-xs text-slate-500">CRM and operations workspace</div>
+              </div>
+            </div>
+            <div className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">
+              <Logout />
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-grow overflow-y-auto">
+          {children}
+        </main>
+      </body>
+    </html>
   
   
 

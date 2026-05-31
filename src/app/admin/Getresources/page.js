@@ -1,8 +1,15 @@
 "use client";
-import React, { useState, useEffect } from "react";
+
+import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { ChevronLeft, Edit2, Trash2, Search, RefreshCcw } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Edit2, RefreshCcw, Search, Trash2 } from "lucide-react";
+import {
+  AdminPanel,
+  AdminShell,
+  adminInputClass,
+  adminPrimaryButtonClass,
+  adminSecondaryButtonClass,
+} from "../_components/AdminShell";
 
 const Getresources = () => {
   const [employees, setEmployees] = useState([]);
@@ -10,8 +17,11 @@ const Getresources = () => {
   const [editData, setEditData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const token = localStorage.getItem("admintokens");
-  const router = useRouter();
+  const [token, setToken] = useState(null);
+
+  useEffect(() => {
+    setToken(localStorage.getItem("admintokens"));
+  }, []);
 
   const fetchCompanyResources = async () => {
     if (!token) {
@@ -22,10 +32,10 @@ const Getresources = () => {
 
     try {
       setLoading(true);
-      const response = await axios.get(
-        "http://localhost:5005/api/getCompanyresource",
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      setError(null);
+      const response = await axios.get("http://localhost:5005/api/getCompanyresource", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (Array.isArray(response.data)) {
         setEmployees(response.data);
@@ -34,23 +44,15 @@ const Getresources = () => {
       }
     } catch (error) {
       console.error("Error details:", error);
-      setError(
-        error.response?.data?.message || "Error: Server issue, try again."
-      );
+      setError(error.response?.data?.message || "Error: Server issue, try again.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchCompanyResources();
+    if (token !== null) fetchCompanyResources();
   }, [token]);
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return isNaN(date) ? "Invalid Date" : date.toLocaleDateString("en-GB");
-  };
 
   const handleEdit = (Eid, resource) => {
     setEditData({ Eid, ...resource });
@@ -93,21 +95,18 @@ const Getresources = () => {
 
   const handleDelete = async (Eid, Thingsname) => {
     if (!confirm("Are you sure you want to delete this resource?")) return;
-    
+
     try {
-      await axios.delete(
-        `http://localhost:5005/api/deleteCompanyresource/${Eid}/${Thingsname}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await axios.delete(`http://localhost:5005/api/deleteCompanyresource/${Eid}/${Thingsname}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       setEmployees((prev) =>
         prev.map((emp) =>
           emp.Eid === Eid
             ? {
                 ...emp,
-                CompanyResources: emp.CompanyResources.filter(
-                  (res) => res.Thingsname !== Thingsname
-                ),
+                CompanyResources: emp.CompanyResources.filter((res) => res.Thingsname !== Thingsname),
               }
             : emp
         )
@@ -132,227 +131,137 @@ const Getresources = () => {
     );
   });
 
-  const getStatusBadgeColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case "provided":
-      case "given":
-        return "bg-green-100 text-green-800 border-green-300";
-      case "handover":
-        return "bg-blue-100 text-blue-800 border-blue-300";
-      case "bending":
-        return "bg-yellow-100 text-yellow-800 border-yellow-300";
-      case "nothandover":
-        return "bg-red-100 text-red-800 border-red-300";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-300";
-    }
-  };
+  const resourceCount = employees.reduce((sum, employee) => sum + (employee.CompanyResources?.length || 0), 0);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => router.push('/admin/adminDasboard')}
-                className="inline-flex items-center px-4 py-2 mb-6 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
->
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="h-5 w-5 mr-2"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-  </svg>
-  Back
-</button>
-              <h1 className="text-xl font-semibold text-gray-800">Company Resources Management</h1>
-            </div>
-            <button
-              onClick={fetchCompanyResources}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <RefreshCcw size={20} />
-            </button>
-          </div>
-        </div>
+    <AdminShell
+      title="Company Resources"
+      subtitle="Track company assets issued to employees and update handover status."
+      actions={
+        <button type="button" onClick={fetchCompanyResources} className={adminSecondaryButtonClass}>
+          <RefreshCcw size={16} />
+          Refresh
+        </button>
+      }
+    >
+      <div className="grid gap-4 md:grid-cols-3">
+        <Metric label="Employees" value={employees.length} />
+        <Metric label="Resources" value={resourceCount} />
+        <Metric label="Filtered" value={filteredEmployees.length} />
       </div>
 
-      {/* Main content */}
-      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        {/* Search and filters */}
-        <div className="mb-6">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search size={18} className="text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search by name, ID, resource..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
+      <AdminPanel title="Issued Resources" subtitle="Search by employee, employee ID, resource name, serial number, or status.">
+        <div className="relative mb-4">
+          <Search size={18} className="pointer-events-none absolute left-3 top-2.5 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search resources..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className={`${adminInputClass} pl-10`}
+          />
         </div>
 
-        {/* Error display */}
-        {error && (
-          <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200">
-            <p className="text-red-700 text-sm">{error}</p>
-          </div>
-        )}
+        {error && <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
-        {/* Loading state */}
         {loading ? (
-          <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-          </div>
+          <div className="py-12 text-center text-sm text-slate-500">Loading company resources...</div>
         ) : (
-          /* Table */
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resource Details</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredEmployees.length > 0 ? (
-                    filteredEmployees.map((employee) => (
-                      <React.Fragment key={employee.Eid}>
-                        {employee.CompanyResources && employee.CompanyResources.length > 0 ? (
-                          employee.CompanyResources.map((resource, index) => (
-                            <tr key={`${employee.Eid}-${index}`} className="hover:bg-gray-50">
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="flex flex-col">
-                                  <div className="text-sm font-medium text-gray-900">{employee.name || "N/A"}</div>
-                                  <div className="text-sm text-gray-500">ID: {employee.Eid || "N/A"}</div>
-                                  <div className="text-xs text-gray-400">
-                                    Joined: {formatDate(employee.JOD)}
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="flex flex-col">
-                                  <div className="text-sm font-medium text-gray-900">{resource.Thingsname || "N/A"}</div>
-                                  <div className="text-sm text-gray-500">#{resource.productnumber || "N/A"}</div>
-                                  <div className="text-xs text-gray-400">
-                                    End Date: {formatDate(employee.EOD)}
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${getStatusBadgeColor(resource.givenStatus)}`}>
-                                  {resource.givenStatus || "N/A"}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <div className="flex space-x-2">
-                                  <button
-                                    onClick={() => handleEdit(employee.Eid, resource)}
-                                    className="p-1 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded"
-                                  >
-                                    <Edit2 size={18} />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDelete(employee.Eid, resource.Thingsname)}
-                                    className="p-1 text-red-600 hover:text-red-900 hover:bg-red-50 rounded"
-                                  >
-                                    <Trash2 size={18} />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900">{employee.name || "N/A"}</div>
-                              <div className="text-sm text-gray-500">ID: {employee.Eid || "N/A"}</div>
+          <div className="overflow-x-auto rounded-lg border border-slate-200">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-slate-100 text-xs uppercase tracking-wide text-slate-600">
+                <tr>
+                  <th className="px-4 py-3">Employee</th>
+                  <th className="px-4 py-3">Resource</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {filteredEmployees.length > 0 ? (
+                  filteredEmployees.map((employee) => (
+                    <React.Fragment key={employee.Eid}>
+                      {employee.CompanyResources && employee.CompanyResources.length > 0 ? (
+                        employee.CompanyResources.map((resource, index) => (
+                          <tr key={`${employee.Eid}-${index}`} className="hover:bg-slate-50">
+                            <td className="px-4 py-3">
+                              <div className="font-medium text-slate-950">{employee.name || "N/A"}</div>
+                              <div className="text-xs text-slate-500">ID: {employee.Eid || "N/A"}</div>
+                              <div className="text-xs text-slate-400">Joined: {formatDate(employee.JOD)}</div>
                             </td>
-                            <td colSpan="3" className="px-6 py-4 text-sm text-center text-gray-500">
-                              No company resources found.
+                            <td className="px-4 py-3">
+                              <div className="font-medium text-slate-950">{resource.Thingsname || "N/A"}</div>
+                              <div className="text-xs text-slate-500">#{resource.productnumber || "N/A"}</div>
+                              <div className="text-xs text-slate-400">End date: {formatDate(employee.EOD)}</div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${getStatusBadgeColor(resource.givenStatus)}`}>
+                                {resource.givenStatus || "N/A"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex gap-2">
+                                <button type="button" onClick={() => handleEdit(employee.Eid, resource)} className="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700 hover:bg-blue-100" aria-label="Edit resource">
+                                  <Edit2 size={16} />
+                                </button>
+                                <button type="button" onClick={() => handleDelete(employee.Eid, resource.Thingsname)} className="rounded-md border border-red-200 bg-red-50 p-2 text-red-700 hover:bg-red-100" aria-label="Delete resource">
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
                             </td>
                           </tr>
-                        )}
-                      </React.Fragment>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
-                        {searchTerm ? "No matching resources found." : "No employee data found."}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                        ))
+                      ) : (
+                        <tr>
+                          <td className="px-4 py-3">
+                            <div className="font-medium text-slate-950">{employee.name || "N/A"}</div>
+                            <div className="text-xs text-slate-500">ID: {employee.Eid || "N/A"}</div>
+                          </td>
+                          <td colSpan="3" className="px-4 py-3 text-center text-slate-500">No company resources found.</td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" className="px-4 py-12 text-center text-slate-500">
+                      {searchTerm ? "No matching resources found." : "No employee data found."}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         )}
-      </div>
+      </AdminPanel>
 
-      {/* Edit Modal */}
       {editData && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 overflow-hidden">
-            <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-              <h2 className="text-lg font-medium text-gray-900">Edit Resource</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+          <div className="w-full max-w-md overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
+            <div className="border-b border-slate-200 px-5 py-4">
+              <h2 className="text-base font-semibold text-slate-950">Edit Resource</h2>
+              <p className="text-sm text-slate-600">{editData.Thingsname}</p>
             </div>
-            <form onSubmit={(e) => handleSubmit(e, editData.Eid)} className="p-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Resource Name</label>
-                  <div className="text-gray-800 font-medium">{editData.Thingsname}</div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date (EOD)</label>
-                  <input
-                    type="date"
-                    value={editData.EOD || ""}
-                    onChange={(e) => setEditData({ ...editData, EOD: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <select
-                    value={editData.givenStatus || ""}
-                    onChange={(e) => setEditData({ ...editData, givenStatus: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="">Select Status</option>
-                    <option value="provided">Given</option>
-                    <option value="handover">Handover</option>
-                    <option value="bending">Bending</option>
-                    <option value="nothandover">Not Handover</option>
-                  </select>
-                </div>
-              </div>
-              
-              <div className="mt-6 flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setEditData(null)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
+            <form onSubmit={(e) => handleSubmit(e, editData.Eid)} className="space-y-4 p-5">
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-slate-700">End Date</span>
+                <input type="date" value={editData.EOD || ""} onChange={(e) => setEditData({ ...editData, EOD: e.target.value })} className={adminInputClass} />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-slate-700">Status</span>
+                <select value={editData.givenStatus || ""} onChange={(e) => setEditData({ ...editData, givenStatus: e.target.value })} className={adminInputClass}>
+                  <option value="">Select Status</option>
+                  <option value="provided">Given</option>
+                  <option value="handover">Handover</option>
+                  <option value="bending">Bending</option>
+                  <option value="nothandover">Not Handover</option>
+                </select>
+              </label>
+              <div className="flex justify-end gap-3">
+                <button type="button" onClick={() => setEditData(null)} className={adminSecondaryButtonClass}>
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
+                <button type="submit" className={adminPrimaryButtonClass}>
                   Save Changes
                 </button>
               </div>
@@ -360,8 +269,39 @@ const Getresources = () => {
           </div>
         </div>
       )}
-    </div>
+    </AdminShell>
   );
 };
+
+function Metric({ label, value }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="mt-2 text-2xl font-semibold text-slate-950">{value}</p>
+    </div>
+  );
+}
+
+function formatDate(dateString) {
+  if (!dateString) return "N/A";
+  const date = new Date(dateString);
+  return isNaN(date) ? "Invalid Date" : date.toLocaleDateString("en-GB");
+}
+
+function getStatusBadgeColor(status) {
+  switch (status?.toLowerCase()) {
+    case "provided":
+    case "given":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    case "handover":
+      return "border-blue-200 bg-blue-50 text-blue-700";
+    case "bending":
+      return "border-amber-200 bg-amber-50 text-amber-700";
+    case "nothandover":
+      return "border-red-200 bg-red-50 text-red-700";
+    default:
+      return "border-slate-200 bg-slate-50 text-slate-700";
+  }
+}
 
 export default Getresources;

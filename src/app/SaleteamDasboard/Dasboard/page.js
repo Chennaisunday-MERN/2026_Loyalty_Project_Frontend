@@ -1,865 +1,424 @@
-    "use client";
-    import React, { useState, useEffect } from 'react';
-    import { useRouter } from 'next/navigation';
-    import axios from 'axios';
-    
+"use client";
 
-    const Dashboard = () => {
-        const role = localStorage.getItem('role');
-        const [completedEnquiries, setCompletedEnquiries] = useState([]);
-        const [enquiryData, setEnquiryData] = useState([]);
-        const [token, setToken] = useState(null);
-        const [Eid, setEid] = useState(null);
-        const [quotationIcons, setQuotationIcons] = useState({});
-        const [enquiry,setEnquiry] = useState('');
-        const [conversionStatus, setConversionStatus] = useState({});
-       
-        const [EidToAssign, setEidToAssign] = useState("");
-        const [saleEnquiryData, setSaleEnquiryData] = useState([]);
-        const [selectedEnquiries, setSelectedEnquiries] = useState([]);
-        const [selectEnquiry, setSelectEnquiry] = useState([]);
-    
-        const [saleEmployeeId, setSaleEmployeeId] = useState([]);
-        const [otherEmployee, setOtherEmployee] = useState([]);
-        const [error, setError] = useState(null);
-        const [allenquiry,SetAllenquiry]=useState([]);
-    
-        const [clickedEnquiryNo, setClickedEnquiryNo] = useState(null);
+import React, { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import axios from "axios";
+import {
+  BarChart3,
+  BriefcaseBusiness,
+  CheckCircle2,
+  ClipboardList,
+  Eye,
+  FileText,
+  Package,
+  ReceiptText,
+  ShoppingCart,
+  UserCheck,
+  UserRound,
+  Users,
+  XCircle,
+} from "lucide-react";
 
-        const router = useRouter();
-    
-        
-       
-        useEffect(() => {
-            const storedToken = localStorage.getItem('admintokens');
-            const storedEid = localStorage.getItem('idstore');
-            const storedRole = localStorage.getItem('role');
-        
-            console.log('Token:', storedToken);
-            console.log('Eid:', storedEid);
-            console.log('Role:', storedRole);
-        
-            setToken(storedToken);
-            setEid(storedEid);
-        }, []); // ✅ This makes sure it only runs once
-        
+const API = "http://localhost:5005/api";
 
-        const checkConversionStatus = async (enquiryList) => {
-            try {
-                if (!enquiryList || enquiryList.length === 0) return;
-    
-                const enquiryParam = enquiryList.join(',');
-                const response = await axios.get(
-                    `http://localhost:5005/api/cc/getMultipleEnquiryStatuses?enquiryNos=${enquiryParam}`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                            "Content-Type": "application/json",
-                        },
-                    }
-                );
-    
-                const statusMap = response.data;
-    
-                setConversionStatus(prevState => {
-                    const updatedStatus = { ...prevState };
-                    enquiryList.forEach(enqNo => {
-                        const shouldHide = statusMap[enqNo]?.shouldHideButtons ?? false;
-                        updatedStatus[enqNo] = shouldHide;
-                    });
-                    console.log("Updated conversion statuses:", updatedStatus);
-                    return updatedStatus;
-                });
-    
-            } catch (err) {
-                console.error("Error fetching conversion statuses:", err);
-            }
-        };
+const priorityStyles = {
+  High: "bg-red-50 text-red-700 border-red-200",
+  Hot: "bg-red-50 text-red-700 border-red-200",
+  Medium: "bg-amber-50 text-amber-700 border-amber-200",
+  Warm: "bg-amber-50 text-amber-700 border-amber-200",
+  Low: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  Cold: "bg-emerald-50 text-emerald-700 border-emerald-200",
+};
 
-        // Check conversion status for each enquiry when data is fetched
-        useEffect(() => {
-            if (allenquiry?.length) {
-                console.log("Checking conversion status for all enquiries:", allenquiry);
-                checkConversionStatus(allenquiry);
-            }
-        }, [allenquiry]);
-          // Runs every time allenquiry changes
-        
-        
-        
+const stageLabels = {
+  "Enquiry-1stage": "New",
+  "Enquiry-2stage": "Assigned",
+  "Enquiry-3stage": "Quotation",
+  "Enquiry-4thstage": "Converted",
+};
 
-        // Fetch Sales Employee List
-    const fetchSalesEmployeeList = async () => {
-        try {
-        const response = await axios.get("http://localhost:5005/api/getsalesemployeeEid", {
-            headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-            },
-        });
-        if (response.data?.getallEid) {
-            setSaleEmployeeId(response.data.getallEid);
-        }
-        } catch (err) {
-        console.error("Error fetching Sales Employee data:", err);
-        setError("Failed to fetch Sales Employee IDs");
-        }
-    };
-
-    // Fetch Other Employees List
-    const fetchOtherEmployees = async () => {
-        try {
-        const response = await axios.get("http://localhost:5005/api/getotheremployeeEid", {
-            headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-            },
-        });
-        if (response.data?.getallothersEid) {
-            setOtherEmployee(response.data.getallothersEid);
-        }
-        } catch (err) {
-        console.error("Error fetching Other Employee data:", err);
-        setError("Failed to fetch Other Employee IDs");
-        }
-    };
-
-    const fetchData = async () => {
-        try {
-            console.log("Fetching data for role:", role);
-    
-            const response =
-                role === "sales head"
-                    ? await axios.get('http://localhost:5005/api/headenquiry', {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                            "Content-Type": "application/json",
-                        },
-                    })
-                    : await axios.get(
-                        `http://localhost:5005/api/getenquiryforsaletam/${Eid}`,
-                        {
-                            headers: {
-                                Authorization: `Bearer ${token}`,
-                                "Content-Type": "application/json",
-                            },
-                        }
-                    );
-    
-            if (role === "sales head") {
-                console.log("Sales Head Enquiries Data:", response.data);
-                setEnquiryData(response.data || []);
-            } else {
-                const data = response.data.getdatas || [];
-                console.log("Sales Team Enquiries Data:", data);
-    
-                setSaleEnquiryData(data);
-                const allEnquiryNos = data.map(item => item.EnquiryNo);
-                SetAllenquiry(allEnquiryNos);
-    
-                const firstEnquiryNo = allEnquiryNos[0];
-                setEnquiry(firstEnquiryNo);
-                console.log("First EnquiryNo:", firstEnquiryNo);
-    
-                // Fetch icon for each enquiry
-                data.forEach(enq => fetchQuotationIcon(enq.EnquiryNo));
-    
-                // ✅ Check conversion status for all enquiries
-                checkConversionStatus(allEnquiryNos);
-            }
-    
-        } catch (err) {
-            console.error("Error fetching data:", err);
-            if (err.response) {
-                console.error("Server Error:", err.response.data);
-            } else if (err.request) {
-                console.error("Network Error:", err.request);
-            } else {
-                console.error("Unknown Error:", err.message);
-            }
-        }
-    };
-    
-    const fetchQuotationIcon = async (enquiry) => {
-        const EnquiryNo = enquiry;
-       
-        if (quotationIcons[EnquiryNo]) {
-            console.log(`Icon for EnquiryNo ${EnquiryNo} already fetched.`);
-            return;
-        }
-    
-        try {
-            const res = await axios.get(`http://localhost:5005/api/getquots/${EnquiryNo}`,{
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-            });
-            console.log("Fetched quotation object:", res.data);
-            
-            const status = res.data?.Status; // Make sure this is safe
-            
-            if (!status) {
-                console.warn(`No Status found in response for EnquiryNo: ${EnquiryNo}`);
-                return;
-            }
-            
-            setQuotationIcons(prevState => ({
-                ...prevState,
-                [EnquiryNo]: status,
-            }));
-            
-        } catch (err) {
-            if (err.response?.status !== 404) {
-                console.error(`Error fetching for ${EnquiryNo}:`, err);
-            }
-        }
-    };
-    useEffect(() => {
-        if (enquiry) {
-            fetchQuotationIcon(enquiry); // Now it will work correctly
-        }
-    }, [enquiry]);
-        
-    
-
-        useEffect(() => {
-            if (token && Eid) {
-              fetchData();
-              fetchSalesEmployeeList();
-              fetchOtherEmployees();
-            }
-          }, [token, Eid]); // ✅ Only runs after both are available
-          
-    
-            
-    
-
-        
-    
-    const handleSelectEnquiry = (EnquiryNo) => {
-        console.log("Updated head selection:", EnquiryNo); 
-        setSelectedEnquiries((prevSelectedEnquiries) => {
-        if (prevSelectedEnquiries.includes(EnquiryNo)) {
-            return prevSelectedEnquiries.filter((id) => id !== EnquiryNo);
-            
-        } else {
-            console.log([...prevSelectedEnquiries, EnquiryNo][0])
-            return [...prevSelectedEnquiries, EnquiryNo];
-            
-        }
-        });
-        
-    };
-    
-    const handleSelectEnquies = (EnquiryNo) => {
-        console.log("Updated employee selection:", EnquiryNo); 
-    setSelectEnquiry((prevSelectedEnquiry) => {
-        if (prevSelectedEnquiry.includes(EnquiryNo))
-            {
-        return prevSelectedEnquiry.filter((id) => id !== EnquiryNo)
-        }else{
-            return  [...prevSelectedEnquiry, EnquiryNo];
-        }
-    });
-    };
-        
-        
-        const handlesubmit = async (e) => {
-            e.preventDefault();
-            try {
-                if (!EidToAssign) return alert("Please enter an Eid to assign.");
-                if (selectedEnquiries.length === 0) return alert("Please select at least one enquiry.");
-
-                const response = await axios.put(
-                    `http://localhost:5005/api/assignedto`,
-                    {
-                        Eid: EidToAssign,
-                        EnquiryNo: selectedEnquiries,
-                    },
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                            "Content-Type": "application/json",
-                        },
-                    }
-                );
-
-                alert(response.data.message || "Successfully updated");
-
-                setEidToAssign("");
-                setSelectedEnquiries([]);
-                setEnquiryData([]);
-            } catch (err) {
-                console.error("Error in updating:", err);
-                alert("Failed to update assignments");
-            }
-        };
-
-        const assignService = async (e) => {
-            e.preventDefault();
-        
-            // Make sure at least one enquiry is selected
-            if (!EidToAssign) return alert("Please enter an Eid to assign.");
-            if (selectEnquiry.length === 0) return alert("Please select at least one enquiry.");
-        
-            try {
-            // API call to assign service to the selected enquiries
-            const response = await axios.put(
-                "http://localhost:5005/api/assignedtoservice",
-                {
-                Eid: EidToAssign,
-                EnquiryNo: selectEnquiry, // Send selected enquiries for service assignment
-                },
-                {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-                }
-            );
-        
-            alert(response.data.message || "Successfully updated");
-            setEidToAssign({});
-            setSelectEnquiry([]);
-            fetchData();
-            } catch (err) {
-            console.error("Error in updating:", err);
-            alert("Failed to update assignments");
-            }
-        };
-        
-        const handleClick = (buttonType, EnquiryNo) => {
-            if (buttonType === 'quotation') {
-                setClickedEnquiryNo(EnquiryNo); 
-                router.push(`/SaleteamDasboard/Quotation?EnquiryNo=${EnquiryNo}`); // Navigate to the quotation page
-            }
-        };
-        
-        
-        const handleCustomerConversion = (response, enquiryNo) => {
-            if (response === 'yes') {
-                
-                router.push(`/SaleteamDasboard/customerconversion?EnquiryNo=${enquiryNo}`);
-            } else {
-                
-                alert(`Customer Conversion for EnquiryNo ${enquiryNo} is marked as: No`);
-            }
-        };
-
-        const handleNotConverted = (response, enquiryNo) => {
-            if (response === 'no') {
-                
-                router.push(`/SaleteamDasboard/customernotconverted?EnquiryNo=${enquiryNo}`);
-            } else {
-                
-                alert(`Customer Conversion for EnquiryNo ${enquiryNo} is marked as: No`);
-            }
-        };
-
-
-        const handleEnquiryClick = (buttonType, EnquiryNo) => {
-            if (buttonType === 'enquiry') {
-                router.push(`/SaleteamDasboard/EnquiryStatus?EnquiryNo=${EnquiryNo}`);
-            }
-        };
-        const ProductRequest = () => {
-            router.push('/SaleteamDasboard/Productrequest');
-        };
-    
-        
-        
-        const ViewProfile = () => {
-            router.push('/SaleteamDasboard/viewprofile');
-        };
-
-        const EnterEnquiries = () => {
-            router.push('/SaleteamDasboard/Enquirypage');
-        };
-
-        const CustomerNotConverted = () => {
-            router.push('/SaleteamDasboard/Cnc');
-        };
-
-        
-        const customerconverted = () => {
-            router.push('/SaleteamDasboard/CustomerConverted');
-        };
-
-        const Inventory = () => {
-            router.push('/SaleteamDasboard/Inventory');
-        };
-        const viewleadenquiry = () =>{
-            try{
-                router.push('/SaleteamDasboard/Leadenquiryview');
-            }catch(err){
-                console.log('cannot goes to the link',err)
-            }
-        }
-        const overallcustomerconvert = () =>{
-            try{
-                router.push('/SaleteamDasboard/Getcustomerdetails');
-            }catch(err){
-                console.log('cannot goes to the link',err)  
-            }
-        }  
-        const POgetted = () =>{
-            try{
-                router.push('/SaleteamDasboard/GetPO');
-            }catch(err){
-                console.log('cannot goes to the link',err)  
-            }
-        }
-        const perfomaInvoice = () => {
-            router.push('/SaleteamDasboard/GetPI');
-        };
-        const GetQuotaionEid = () => {
-            router.push('/SaleteamDasboard/GetEidQuotation');
-        };
-        const GetSO = () => {
-            router.push('/SaleteamDasboard/GetSO');
-        };
-        
-        if (error) {
-            return <div>Error: {error}</div>;
-        }
-
-        const currentDate = new Date(); 
-        const istDate = new Date(currentDate.getTime() + (5.5 * 60 * 60 * 1000)); 
-        console.log(istDate.toLocaleString()); 
-        
-
-        
-        return (
-            <div className="bg-gray-50 min-h-screen p-8">
-                <div className="max-w-full mx-auto">
-                    <div className="flex flex-col space-y-8 bg-white shadow-lg rounded-lg p-6">
-                        <h2 className="text-3xl font-semibold text-center text-green-600">Dashboard</h2>
-
-                        <nav className="flex justify-between space-x-4">
-                            <button
-                                onClick={ViewProfile}
-                                className="flex-1 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 transition duration-300"
-                            >
-                                View Profile
-                            </button>
-                            {role === "Lead filler" && (
-                                <>
-                                <button
-                                    onClick={EnterEnquiries}
-                                    className="flex-1 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 transition duration-300"
-                                >
-                                    Enter Enquiries
-                                </button>
-                                <button 
-                                onClick={viewleadenquiry}
-                                className="flex-1 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 transition duration-300"
-
-                                >
-                                    ViewleadEnquires
-                                </button>
-                                </>
-                                
-                            )}
-                            <button
-                                onClick={customerconverted}
-                                className="flex-1 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 transition duration-300"
-                            >
-                                Customer Converted
-                            </button>
-                            <button
-                                onClick={overallcustomerconvert}
-                                className="flex-1 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 transition duration-300"
-                            >
-                                OverallCustomer
-                            </button>
-                            <button
-                                onClick={CustomerNotConverted}
-                                className="flex-1 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 transition duration-300"
-                            >
-                                Customer Not Converted
-                            </button>
-                            <button
-                                onClick={Inventory}
-                                className="flex-1 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 transition duration-300"
-                            >
-                                Inventory
-                            </button>
-                            <button
-                                onClick={ProductRequest}
-                                className="flex-1 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 transition duration-300"
-                            >
-                                Product Request
-                            </button>
-                            <button
-                                onClick={POgetted}
-                                className="flex-1 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 transition duration-300"
-                            >
-                                Purchase order
-                            </button>
-                            <button
-                                onClick={perfomaInvoice}
-                                className="flex-1 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 transition duration-300"
-                            >
-                                Perfoma Invoice
-                            </button>
-                            <button
-                                onClick={GetQuotaionEid}
-                                className="flex-1 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 transition duration-300"
-                            >
-                                ViewQuotaion
-                            </button>
-                            <button
-                                onClick={GetSO}
-                                className="flex-1 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 transition duration-300"
-                            >
-                                View Sales Order
-                            </button>
-                        </nav>
-
-                        <div className="min-h-screen bg-gradient-to-br from-green-100 to-green-300 p-8">
-                            <div className="bg-white rounded-xl shadow-2xl p-6">
-                                <h1 className="text-4xl font-bold text-center text-green-600 mb-4">Enquiry Data</h1>
-                                <form onSubmit={role === "sales head" || selectedEnquiries.length > 0? handlesubmit : selectEnquiry.length > 0 ? assignService : null} className="space-y-6">
-                                    <div className="overflow-x-auto">
-                                        <table className="min-w-full table-auto text-left bg-white shadow-lg rounded-lg">
-                                            <thead>
-                                                <tr className="bg-green-100 text-green-600">
-                                                   <th className="px-4 py-2">Select</th>
-                                                 
-        <th className="px-4 py-2">COMPANY NAME</th>
-        <th className="px-4 py-2">CONTACT PERSON</th>
-        <th className="px-4 py-2">DEPARTMENT</th>
-        <th className="px-4 py-2">LEAD MEDIUM</th>
-        <th className="px-4 py-2">LEAD PRIORITY</th>
-        <th className="px-4 py-2">ENQUIRY TYPE</th>
-        <th className="px-4 py-2">LEAD CONDITION</th>
-        <th className="px-4 py-2">CONTACT NUMBER</th>
-        <th className="px-4 py-2">ALTERNATE PHONE NUMBER</th>
-        <th className="px-4 py-2">PRIMARY MAIL</th>
-        <th className="px-4 py-2">SECONDARY MAIL</th>
-        <th className="px-4 py-2">ADDRESS</th>
-        <th className="px-4 py-2">COUNTRY</th>
-        <th className="px-4 py-2">CITY</th>
-        <th className="px-4 py-2">POSTAL CODE</th>
-        <th className="px-4 py-2">STATE</th>
-        <th className="px-4 py-2">REMARKS</th>
-        <th className="px-4 py-2">Date</th>
-        {role === "Sales Employee" && (
-    <>
-        <th className="px-4 py-2">CUSTOMER CONVERTION</th>  
-        <th className="px-4 py-2">ACTION</th>
-        <th className="px-4 py-2">STATUS</th>
-       
-    </>
-)}
-
-
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {role === "sales head"
-                                                    ? enquiryData.length > 0
-                                                        ? enquiryData.map((data) => (
-                                                            <tr key={data._id} className="border-t border-green-200">
-                                                                <td className="px-4 py-2">
-                                                                <input
-        type="checkbox"
-        checked={selectedEnquiries.includes(data.EnquiryNo)}  
-        onChange={() => handleSelectEnquiry(data.EnquiryNo)}
-        className="mx-auto"
-    />
-
-                                                                </td>
-                                                                <td className="px-4 py-2">{data?.LeadDetails?.companyName || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.LeadDetails?.clientName || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.LeadDetails?.Department || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.LeadDetails?.LeadMedium || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.LeadDetails?.LeadPriority || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.LeadDetails?.EnquiryType || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.LeadDetails?.Leadcondition || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.ContactDetails?.MobileNumber || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.ContactDetails?.AlternateMobileNumber || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.ContactDetails?.PrimaryMail || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.ContactDetails?.SecondaryMail || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.AddressDetails?.Address || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.AddressDetails?.Country || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.AddressDetails?.City || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.AddressDetails?.PostalCode || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.AddressDetails?.State || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.DescriptionDetails || "N/A"}</td>
-                                                                <td className="px-4 py-2">
-  {data?.createdAt ? new Date(data.createdAt).toLocaleDateString() : "N/A"}
-</td> 
-                                                               
-                                                                {selectedEnquiries[0] === data.EnquiryNo?<td>
-                                                                    <div className="flex flex-col space-y-5 md:flex-row md:items-end md:space-y-0 md:space-x-5">
-  <div className="flex-grow relative">
-    <label className="block text-sm font-medium text-gray-600 mb-2 ml-1">
-      Assigning Employee
-    </label>
-    
-    <div className="relative group">
-      <select
-        name="Eid" 
-        value={EidToAssign}
-        onChange={(e) => setEidToAssign(e.target.value)}
-        className="block w-full bg-gray-50 border border-gray-200 rounded-xl py-3.5 px-4 pr-10 text-gray-700 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white transition-all duration-200 ease-in-out shadow-sm hover:border-gray-300"
-      >
-        <option value="">Select Employee</option>
-        {saleEmployeeId.length > 0 ? (
-          saleEmployeeId.map((employee, index) => (
-            <option key={index} value={employee.Eid}>
-              {employee.Eid} - {employee.name}
-            </option>
-          ))
-        ) : (
-          <option disabled>No employees available</option>
-        )}
-      </select>
-      
-      {/* Custom dropdown icon with animation */}
-      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-gray-500 group-hover:text-blue-500 transition-colors duration-200">
-        <svg className="h-5 w-5 transform group-hover:translate-y-0.5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-        </svg>
-      </div>
-      
-      {/* Bottom border animation on hover */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-blue-500 group-hover:w-[calc(100%-20px)] transition-all duration-300"></div>
-    </div>
-  </div>
-  
-  <button
-    type="submit"
-    disabled={!EidToAssign || selectedEnquiries.length === 0}
-    className="relative overflow-hidden px-6 py-3.5 bg-blue-600 text-white font-medium rounded-xl shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-300 ease-out disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:shadow-none transform hover:-translate-y-0.5 active:translate-y-0"
-  >
-    <span className="relative z-10 flex items-center justify-center">
-      {selectedEnquiries.length > 0 ? (
-        <>
-          <span>Assign</span>
-          <span className="ml-2 bg-white bg-opacity-20 px-2 py-0.5 rounded-full text-xs font-semibold">{selectedEnquiries.length}</span>
-        </>
-      ) : (
-        'Assign'
-      )}
-    </span>
-    {/* Hover effect overlay */}
-    <span className="absolute top-0 left-0 w-full h-0 bg-blue-700 transition-all duration-300 ease-out group-hover:h-full"></span>
-  </button>
-</div>
-                        </td>:null}
-                                                            </tr>
-                                                        )) : <tr><td colSpan="20">No enquiries available</td></tr>
-                                                    : saleEnquiryData.length > 0
-                                                        ? saleEnquiryData.map((data) => (
-                                                            <tr key={data._id} className="border-t border-green-200">
-                                                                <td>
-                            
-                            <input
-                            type="checkbox"
-                            checked={selectEnquiry.includes(data.EnquiryNo)}
-                            onChange={() => handleSelectEnquies(data.EnquiryNo)}
-                            />
-                        </td>
-                                                                <td className="px-4 py-2">{data?.LeadDetails?.companyName || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.LeadDetails?.clientName || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.LeadDetails?.Department || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.LeadDetails?.LeadMedium || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.LeadDetails?.LeadPriority || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.LeadDetails?.EnquiryType || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.LeadDetails?.Leadcondition || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.ContactDetails?.MobileNumber || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.ContactDetails?.AlternateMobileNumber || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.ContactDetails?.PrimaryMail || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.ContactDetails?.SecondaryMail || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.AddressDetails?.Address || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.AddressDetails?.Country || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.AddressDetails?.City || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.AddressDetails?.PostalCode || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.AddressDetails?.State || "N/A"}</td>
-                                                                <td className="px-4 py-2">{data?.DescriptionDetails || "N/A"}</td>
-                                                                <td className="px-4 py-2">
-  {data?.createdAt ? new Date(data.createdAt).toLocaleDateString() : "N/A"}
-</td>
-
-
-                                                    
- 
-                                                    {
-    !conversionStatus[data?.EnquiryNo]
-    ? (
-        <td>
-            <div className="flex space-x-4 mt-2">
-                <button
-                    onClick={(e) => {
-                        e.preventDefault();
-                        handleCustomerConversion('yes', data.EnquiryNo);
-                    }}
-                    className="relative group ml-6"
-                >
-                    <img src="/yes.png" alt="Convert" width={24} />
-                    <span className="absolute right-full top-1/2 -translate-y-1/2 ml-4 bg-black text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        Convert
-                    </span>
-                </button>
-
-                <button
-                    onClick={(e) => {
-                        e.preventDefault();
-                        handleNotConverted('no', data.EnquiryNo);
-                    }}
-                    className="relative group ml-8"
-                >
-                    <img src="/no.png" alt="Not Convert" width={24} />
-                    <span className="absolute left-full top-1/2 -translate-y-1/2 ml-4 bg-black text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        Not Convert
-                    </span>
-                </button>
-            </div>
-        </td>
-    ) : (
-        <td>
-            <div
-                className="w-4 h-4 ml-5 mt-2 text-red-500 "
-               
-            >already converted</div>
-        </td>
-    )
+function normalizePriority(value) {
+  const priority = String(value || "").toLowerCase();
+  if (priority === "hot") return "High";
+  if (priority === "warm") return "Medium";
+  if (priority === "cold") return "Low";
+  if (priority === "high") return "High";
+  if (priority === "medium") return "Medium";
+  return "Low";
 }
 
+function formatDate(value) {
+  if (!value) return "N/A";
+  return new Date(value).toLocaleDateString();
+}
 
+function sortNewest(items) {
+  return [...items].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+}
 
+export default function Dashboard() {
+  const router = useRouter();
+  const [role, setRole] = useState("");
+  const [token, setToken] = useState("");
+  const [eid, setEid] = useState("");
+  const [enquiries, setEnquiries] = useState([]);
+  const [salesEmployees, setSalesEmployees] = useState([]);
+  const [otherEmployees, setOtherEmployees] = useState([]);
+  const [selectedEnquiries, setSelectedEnquiries] = useState([]);
+  const [assignTo, setAssignTo] = useState("");
+  const [conversionStatus, setConversionStatus] = useState({});
+  const [quotationIcons, setQuotationIcons] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
+  useEffect(() => {
+    setToken(localStorage.getItem("admintokens") || "");
+    setEid(localStorage.getItem("idstore") || "");
+    setRole(localStorage.getItem("role") || "");
+  }, []);
 
+  const headers = useMemo(() => ({
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  }), [token]);
 
-        
-                                                                <td className="px-4 py-2">
-                                                                
-                                                                <button
-    onClick={(e) => {
-        e.preventDefault();
-        handleClick('quotation', data.EnquiryNo);
-    }}
-    className="relative group"
->
-    {quotationIcons[data.EnquiryNo] === 'Editaccess' || quotationIcons[data.EnquiryNo] === 'quotsaccess' ? (
-        <img
-            src={'/quots.png'}
-            alt="Quotation Status"
-            width={24}
-            height={24}
-        />
-    ) : (
-        <img
-            src={'/unsend.png'}
-            alt="Quotation Status"
-            width={24}
-            height={24}
-        />
-    )}
-    <span className="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-black text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        Generate Quotation
-    </span>
-</button>
+  const fetchQuotationIcon = async (enquiryNo) => {
+    try {
+      const res = await axios.get(`${API}/getquots/${enquiryNo}`, { headers });
+      if (res.data?.Status) {
+        setQuotationIcons((previous) => ({ ...previous, [enquiryNo]: res.data.Status }));
+      }
+    } catch (err) {
+      if (err.response?.status !== 404) console.error(err);
+    }
+  };
 
-    </td>
-    <td>
-    <button
-            onClick={(e) =>{e.preventDefault();
-                handleEnquiryClick('enquiry', data.EnquiryNo)}} 
-        className="relative group"
-        >
-        <img src="/viewstatus.png" alt="View Status" width={24} height={24} className="filter invert sepia-0 saturate-100 hue-rotate-120 brightness-100 contrast-100" />
-        <span className="absolute left-full top-1/2 -translate-y-1/2 ml-4 bg-black text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        view status 
-    </span>
-        </button>
-        </td>
-      
-    
-    {selectEnquiry[0] === data.EnquiryNo ? (
-  <td className="py-3 px-4">
-    {(role === "sales Employee" ||
-      data?.LeadDetails?.EnquiryType === "Project" ||
-      data?.LeadDetails?.EnquiryType === "Service") && (
-      <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-        <select
-          name="Eid"
-          value={EidToAssign}
-          onChange={(e) => setEidToAssign(e.target.value)}
-          className="w-full sm:w-64 px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200"
-        >
-          <option value="">Select Employee ID</option>
-          {otherEmployee.length > 0 ? (
-            otherEmployee.map((employee, index) => (
-              <option key={index} value={employee.Eid}>
-                {employee.Eid} - {employee.name}
-              </option>
-            ))
-          ) : (
-            <option value="">No data found</option>
-          )}
-        </select>
-        <button
-          type="submit"
-          disabled={!EidToAssign || selectEnquiry.length === 0}
-          className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-blue-400"
-        >
-          Assign
-        </button>
-      </div>
-    )}
-  </td>
-) : null}
-    
+  const checkConversionStatus = async (items) => {
+    const enquiryNos = items.map((item) => item.EnquiryNo).filter(Boolean);
+    if (enquiryNos.length === 0) return;
+    try {
+      const response = await axios.get(
+        `${API}/cc/getMultipleEnquiryStatuses?enquiryNos=${enquiryNos.join(",")}`,
+        { headers }
+      );
+      const map = {};
+      enquiryNos.forEach((enquiryNo) => {
+        map[enquiryNo] = response.data?.[enquiryNo]?.shouldHideButtons ?? false;
+      });
+      setConversionStatus(map);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-    
-                                                            </tr>
-                                                        )) : <tr><td colSpan="20">No sales enquiries available</td></tr>
-                                                }
-                                            
-                                            </tbody>
-                                        
-                                            
-                                        </table>
-                                        
-                                        {role === "sales head" && (
-        <>
-            
-            {/* <div>
-                <label className="block text-lg text-gray-700">Enter Employee ID (Eid)</label>
-                <input
-                    type="text"
-                    value={EidToAssign}
-                    onChange={(e) => setEidToAssign(e.target.value)}
-                    className="w-full p-2 mt-2 border rounded-md"
-                    placeholder="Employee ID"
-                />
-            </div> */}
+  const fetchData = async () => {
+    if (!token || !role) return;
+    setLoading(true);
+    setError("");
+    try {
+      const [employeeRes, otherRes] = await Promise.all([
+        axios.get(`${API}/getsalesemployeeEid`, { headers }).catch(() => ({ data: {} })),
+        axios.get(`${API}/getotheremployeeEid`, { headers }).catch(() => ({ data: {} })),
+      ]);
+      setSalesEmployees(employeeRes.data?.getallEid || []);
+      setOtherEmployees(otherRes.data?.getallothersEid || []);
 
-            {/* Assign Button */}
-            {/* <div className="text-center">
-                <button 
-                    type="submit" 
-                    className="px-4 py-2 text-white bg-green-600 rounded-md hover:bg-green-700 transition duration-300"
-                >
-                    Assign Enquiry to Employee
-                </button>
-            </div> */}
-        </>
-    )}
+      const response = role === "sales head"
+        ? await axios.get(`${API}/headenquiry`, { headers })
+        : await axios.get(`${API}/getenquiryforsaletam/${eid}`, { headers });
 
-                                    
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+      const data = role === "sales head" ? response.data || [] : response.data?.getdatas || [];
+      const sorted = sortNewest(Array.isArray(data) ? data : []);
+      setEnquiries(sorted);
+      await checkConversionStatus(sorted);
+      sorted.forEach((item) => fetchQuotationIcon(item.EnquiryNo));
+    } catch (err) {
+      if (err.response?.status === 404 || err.response?.status === 400) {
+        setEnquiries([]);
+      } else {
+        setError(err.response?.data?.message || "Failed to load dashboard data.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [token, role, eid]);
+
+  const metrics = useMemo(() => {
+    const total = enquiries.length;
+    const high = enquiries.filter((item) => normalizePriority(item?.LeadDetails?.LeadPriority) === "High").length;
+    const medium = enquiries.filter((item) => normalizePriority(item?.LeadDetails?.LeadPriority) === "Medium").length;
+    const low = enquiries.filter((item) => normalizePriority(item?.LeadDetails?.LeadPriority) === "Low").length;
+    const converted = enquiries.filter((item) => conversionStatus[item.EnquiryNo]).length;
+    const pending = Math.max(total - converted, 0);
+    return { total, high, medium, low, converted, pending };
+  }, [enquiries, conversionStatus]);
+
+  const toggleSelection = (enquiryNo) => {
+    setSelectedEnquiries((previous) => (
+      previous.includes(enquiryNo)
+        ? previous.filter((item) => item !== enquiryNo)
+        : [...previous, enquiryNo]
+    ));
+  };
+
+  const assignSelected = async (event) => {
+    event.preventDefault();
+    if (!assignTo || selectedEnquiries.length === 0) {
+      alert("Select at least one enquiry and employee.");
+      return;
+    }
+
+    const endpoint = role === "sales head" ? "assignedto" : "assignedtoservice";
+    try {
+      await axios.put(`${API}/${endpoint}`, { Eid: assignTo, EnquiryNo: selectedEnquiries }, { headers });
+      setAssignTo("");
+      setSelectedEnquiries([]);
+      await fetchData();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to assign enquiries.");
+    }
+  };
+
+  const deleteLead = async (enquiryNo) => {
+    if (role !== "sales head") return;
+    if (!window.confirm(`Delete lead ${enquiryNo}? This cannot be undone.`)) return;
+    try {
+      await axios.delete(`${API}/leadenquiry/${enquiryNo}`, { headers });
+      setEnquiries((previous) => previous.filter((item) => item.EnquiryNo !== enquiryNo));
+      setSelectedEnquiries((previous) => previous.filter((item) => item !== enquiryNo));
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to delete lead.");
+    }
+  };
+
+  const quickActions = [
+    { label: "Profile", icon: UserRound, href: "/SaleteamDasboard/viewprofile" },
+    ...(role === "Lead filler" ? [
+      { label: "Enter Enquiry", icon: ClipboardList, href: "/SaleteamDasboard/Enquirypage" },
+      { label: "View Leads", icon: Eye, href: "/SaleteamDasboard/Leadenquiryview" },
+    ] : []),
+    { label: "Converted", icon: CheckCircle2, href: "/SaleteamDasboard/CustomerConverted" },
+    { label: "Not Converted", icon: XCircle, href: "/SaleteamDasboard/Cnc" },
+    { label: "Customers", icon: Users, href: "/SaleteamDasboard/Getcustomerdetails" },
+    { label: "Inventory", icon: Package, href: "/SaleteamDasboard/Inventory" },
+    { label: "Product Request", icon: BriefcaseBusiness, href: "/SaleteamDasboard/Productrequest" },
+    { label: "Purchase Orders", icon: ShoppingCart, href: "/SaleteamDasboard/GetPO" },
+    { label: "PI", icon: ReceiptText, href: "/SaleteamDasboard/GetPI" },
+    { label: "Quotations", icon: FileText, href: "/SaleteamDasboard/GetEidQuotation" },
+    { label: "Sales Orders", icon: BarChart3, href: "/SaleteamDasboard/GetSO" },
+  ];
+
+  const employeeOptions = role === "sales head" ? salesEmployees : otherEmployees;
+
+  return (
+    <div className="min-h-screen bg-slate-50 px-4 py-6 text-slate-900">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-sm font-medium uppercase tracking-wide text-slate-500">{role || "Sales"} workspace</p>
+              <h1 className="mt-1 text-2xl font-semibold text-slate-950">Lead Operations Dashboard</h1>
+              <p className="mt-1 text-sm text-slate-600">Newest lead enquiries appear first. Track priority, ownership, progress, and conversion from one place.</p>
             </div>
-        );
-    };
+            <button
+              onClick={fetchData}
+              className="w-full rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 lg:w-auto"
+            >
+              Refresh
+            </button>
+          </div>
+        </section>
 
-    export default Dashboard;
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
+          <MetricCard label="Total Leads" value={metrics.total} tone="slate" />
+          <MetricCard label="Hot / High" value={metrics.high} tone="red" />
+          <MetricCard label="Warm / Medium" value={metrics.medium} tone="amber" />
+          <MetricCard label="Cold / Low" value={metrics.low} tone="emerald" />
+          <MetricCard label="Converted" value={metrics.converted} tone="blue" />
+          <MetricCard label="Open" value={metrics.pending} tone="violet" />
+        </section>
+
+        <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Work Boards</h2>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+            {quickActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <button
+                  key={action.href}
+                  onClick={() => router.push(action.href)}
+                  className="flex min-h-20 items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-left hover:border-emerald-300 hover:bg-emerald-50"
+                >
+                  <span className="rounded-md bg-white p-2 text-emerald-700 shadow-sm">
+                    <Icon size={18} />
+                  </span>
+                  <span className="text-sm font-medium text-slate-800">{action.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {error && <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+
+        <form onSubmit={assignSelected} className="rounded-lg border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-col gap-4 border-b border-slate-200 p-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-950">Lead Pipeline</h2>
+              <p className="text-sm text-slate-600">
+                {role === "sales head"
+                  ? "Select leads and assign them to sales employees."
+                  : "Review assigned leads, convert customers, create quotations, and assign service work when needed."}
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <select
+                value={assignTo}
+                onChange={(event) => setAssignTo(event.target.value)}
+                className="min-w-64 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+              >
+                <option value="">{role === "sales head" ? "Assign to sales employee" : "Assign service/project employee"}</option>
+                {employeeOptions.map((employee) => (
+                  <option key={employee.Eid} value={employee.Eid}>{employee.Eid} - {employee.name}</option>
+                ))}
+              </select>
+              <button
+                type="submit"
+                disabled={!assignTo || selectedEnquiries.length === 0}
+                className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+              >
+                Assign {selectedEnquiries.length ? `(${selectedEnquiries.length})` : ""}
+              </button>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-slate-100 text-xs uppercase tracking-wide text-slate-600">
+                <tr>
+                  <th className="px-4 py-3">Select</th>
+                  <th className="px-4 py-3">Lead</th>
+                  <th className="px-4 py-3">Owner / Stage</th>
+                  <th className="px-4 py-3">Priority</th>
+                  <th className="px-4 py-3">Contact</th>
+                  <th className="px-4 py-3">Created</th>
+                  <th className="px-4 py-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {loading ? (
+                  <tr><td colSpan="7" className="px-4 py-10 text-center text-slate-500">Loading leads...</td></tr>
+                ) : enquiries.length === 0 ? (
+                  <tr><td colSpan="7" className="px-4 py-10 text-center text-slate-500">No leads available.</td></tr>
+                ) : enquiries.map((item) => {
+                  const priority = normalizePriority(item?.LeadDetails?.LeadPriority);
+                  const isConverted = conversionStatus[item.EnquiryNo];
+                  return (
+                    <tr key={item._id} className="align-top hover:bg-slate-50">
+                      <td className="px-4 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedEnquiries.includes(item.EnquiryNo)}
+                          onChange={() => toggleSelection(item.EnquiryNo)}
+                          className="h-4 w-4 rounded border-slate-300 text-emerald-600"
+                        />
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="font-semibold text-slate-900">{item?.LeadDetails?.companyName || "N/A"}</div>
+                        <div className="text-slate-600">{item?.LeadDetails?.clientName || "N/A"}</div>
+                        <div className="mt-1 text-xs text-slate-500">{item.EnquiryNo}</div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="font-medium text-slate-800">{item.Eid || "Unassigned"}</div>
+                        <div className="mt-1 rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600">{stageLabels[item.Status] || item.Status || "N/A"}</div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${priorityStyles[priority]}`}>
+                          {priority === "High" ? "Hot" : priority === "Medium" ? "Warm" : "Cold"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div>{item?.ContactDetails?.MobileNumber || "N/A"}</div>
+                        <div className="text-slate-500">{item?.ContactDetails?.PrimaryMail || "N/A"}</div>
+                      </td>
+                      <td className="px-4 py-4 text-slate-600">{formatDate(item.createdAt)}</td>
+                      <td className="px-4 py-4">
+                        {role === "Sales Employee" ? (
+                          <div className="flex flex-wrap gap-2">
+                            {!isConverted ? (
+                              <>
+                                <ActionButton label="Convert" onClick={() => router.push(`/SaleteamDasboard/customerconversion?EnquiryNo=${item.EnquiryNo}`)} />
+                                <ActionButton label="Lost" variant="secondary" onClick={() => router.push(`/SaleteamDasboard/customernotconverted?EnquiryNo=${item.EnquiryNo}`)} />
+                              </>
+                            ) : (
+                              <span className="rounded-md bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700">Converted</span>
+                            )}
+                            <ActionButton
+                              label={quotationIcons[item.EnquiryNo] === "Editaccess" || quotationIcons[item.EnquiryNo] === "quotsaccess" ? "View Quote" : "Quote"}
+                              onClick={() => router.push(`/SaleteamDasboard/Quotation?EnquiryNo=${item.EnquiryNo}`)}
+                            />
+                            <ActionButton label="Status" variant="secondary" onClick={() => router.push(`/SaleteamDasboard/EnquiryStatus?EnquiryNo=${item.EnquiryNo}`)} />
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap gap-2">
+                            <span className="rounded-md border border-slate-200 px-3 py-2 text-xs text-slate-500">Select to assign</span>
+                            {role === "sales head" && (
+                              <button
+                                type="button"
+                                onClick={() => deleteLead(item.EnquiryNo)}
+                                className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function MetricCard({ label, value, tone }) {
+  const tones = {
+    slate: "border-slate-200 bg-white text-slate-900",
+    red: "border-red-200 bg-red-50 text-red-800",
+    amber: "border-amber-200 bg-amber-50 text-amber-800",
+    emerald: "border-emerald-200 bg-emerald-50 text-emerald-800",
+    blue: "border-blue-200 bg-blue-50 text-blue-800",
+    violet: "border-violet-200 bg-violet-50 text-violet-800",
+  };
+  return (
+    <div className={`rounded-lg border p-4 shadow-sm ${tones[tone]}`}>
+      <div className="text-2xl font-semibold">{value}</div>
+      <div className="mt-1 text-sm font-medium">{label}</div>
+    </div>
+  );
+}
+
+function ActionButton({ label, onClick, variant = "primary" }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={variant === "primary"
+        ? "rounded-md bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-700"
+        : "rounded-md border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"}
+    >
+      {label}
+    </button>
+  );
+}
