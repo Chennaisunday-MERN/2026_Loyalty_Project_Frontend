@@ -10,6 +10,7 @@ import {
   ClipboardList,
   Eye,
   FileText,
+  Globe2,
   Package,
   ReceiptText,
   ShoppingCart,
@@ -200,6 +201,7 @@ export default function Dashboard() {
     ...(role === "Lead filler" ? [
       { label: "Enter Enquiry", icon: ClipboardList, href: "/SaleteamDasboard/Enquirypage" },
       { label: "View Leads", icon: Eye, href: "/SaleteamDasboard/Leadenquiryview" },
+      { label: "Product Enquiries", icon: Globe2, href: "/SaleteamDasboard/ProductEnquiries" },
     ] : []),
     { label: "Converted", icon: CheckCircle2, href: "/SaleteamDasboard/CustomerConverted" },
     { label: "Not Converted", icon: XCircle, href: "/SaleteamDasboard/Cnc" },
