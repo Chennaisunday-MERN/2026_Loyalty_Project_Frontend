@@ -2,7 +2,8 @@
 
 import axios from 'axios';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation'; 
+import { useRouter } from 'next/navigation';
+import { AdminShell, AdminPanel, adminInputClass, adminPrimaryButtonClass } from "../_components/AdminShell";
 
 const PasswordReset = () => {
   const router = useRouter();
@@ -44,60 +45,59 @@ const PasswordReset = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-green-100 to-green-300">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-2xl">
-        <h1 className="text-4xl font-bold text-center text-green-600">Reset Password</h1>
-            
-        <form onSubmit={handlesubmit} className="space-y-4">
+    <AdminShell
+      title="Reset Password"
+      subtitle="Reset an employee's password by employee ID."
+    >
+      <AdminPanel title="Password reset" subtitle="Enter the employee ID and the new password.">
+        <div className="max-w-lg">
+          <form onSubmit={handlesubmit} className="space-y-4">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Eid</label>
+              <input
+                name="Eid"
+                type="Eid"
+                placeholder="Enter your new password"
+                value={passwords.Eid}
+                onChange={handlechange}
+                className={adminInputClass}
+                required
+              />
+            </div>
 
-        <div className="relative">
-            <label className="block mb-2 text-sm font-medium text-gray-600">Eid</label>
-            <input
-              name="Eid"
-              type="Eid"
-              placeholder="Enter your new password"
-              value={passwords.Eid}
-              onChange={handlechange}
-              className="w-full p-3 rounded-lg border-2 border-green-200 focus:outline-none focus:ring-2 focus:ring-green-400"
-              required
-            />
-          </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Password</label>
+              <input
+                name="password"
+                type="password"
+                placeholder="Enter your new password"
+                value={passwords.password}
+                onChange={handlechange}
+                className={adminInputClass}
+                required
+              />
+            </div>
 
-          <div className="relative">
-            <label className="block mb-2 text-sm font-medium text-gray-600">Password</label>
-            <input
-              name="password"
-              type="password"
-              placeholder="Enter your new password"
-              value={passwords.password}
-              onChange={handlechange}
-              className="w-full p-3 rounded-lg border-2 border-green-200 focus:outline-none focus:ring-2 focus:ring-green-400"
-              required
-            />
-          </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Confirm Password</label>
+              <input
+                name="confirmPassword"
+                type="password"
+                placeholder="Confirm your new password"
+                value={passwords.confirmPassword}
+                onChange={handlechange}
+                className={adminInputClass}
+                required
+              />
+            </div>
 
-          <div className="relative">
-            <label className="block mb-2 text-sm font-medium text-gray-600">Confirm Password</label>
-            <input
-              name="confirmPassword"
-              type="password"
-              placeholder="Confirm your new password"
-              value={passwords.confirmPassword}
-              onChange={handlechange}
-              className="w-full p-3 rounded-lg border-2 border-green-200 focus:outline-none focus:ring-2 focus:ring-green-400"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full py-3 text-white bg-green-600 rounded-lg hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105"
-          >
-            Reset Password
-          </button>
-        </form>
-      </div>
-    </div>
+            <button type="submit" className={adminPrimaryButtonClass}>
+              Reset Password
+            </button>
+          </form>
+        </div>
+      </AdminPanel>
+    </AdminShell>
   );
 };
 

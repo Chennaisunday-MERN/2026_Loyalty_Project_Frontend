@@ -126,7 +126,7 @@ const InvoicePage = ({ workvisit, setWorkvisit, setIsSubmitted }) => {
 
         {/* Footer */}
         <div className="mt-8 font-bold text-xl pl-3">
-          <p>For LOYALTY AUTOMATION PVT. LTD.</p>
+          <p>For SK SALES</p>
           <img className='ml-12 mt-3' src='/sign1.jpeg' alt="Signature" />
         </div>
       </div>

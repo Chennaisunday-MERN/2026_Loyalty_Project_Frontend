@@ -301,7 +301,7 @@ const Salesorder = () => {
 
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
-      doc.text("Loyalty Automation Pvt Ltd", 210 - marginX, 10, { align: "right" });
+      doc.text("SK Sales", 210 - marginX, 10, { align: "right" });
       doc.text("No.27/1 Vaigai Colony", 210 - marginX, 14, { align: "right" });
       doc.text("2nd Street, 12th Ave, Ashok Nagar", 210 - marginX, 18, { align: "right" });
       doc.text("Chennai - 600083", 210 - marginX, 22, { align: "right" });

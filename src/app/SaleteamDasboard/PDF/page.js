@@ -175,7 +175,7 @@ export default function Home() {
   return (
     <div className="bg-gray-50 min-h-screen">
       <Head>
-        <title>Commercial Offer | Loyalty Automation System</title>
+        <title>Commercial Offer | SK Sales</title>
         <meta name="description" content="Generate modern commercial offer PDF" />
         <link
           href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
@@ -271,7 +271,7 @@ export default function Home() {
                   <div>
                   <img 
   src="/p4.jpeg" 
-  alt="Loyalty Automation System Logo" 
+  alt="SK Sales Logo" 
   className="w-full h-auto object-contain"
 />
 
@@ -316,11 +316,11 @@ export default function Home() {
                     resulting in higher competitiveness for companies on their way to the future of industry.
                   </p>
                   <p className="mb-4 text-gray-700">
-                    Here you will find Loyalty Automation System comprehensive offering for
+                    Here you will find SK Sales comprehensive offering for
                     automation technology and the digitalization of production.
                   </p>
                   <p className="text-gray-700">
-                    Loyalty Automation is at the forefront of Automation. We strive to develop innovative and reliable products
+                    SK Sales is at the forefront of Automation. We strive to develop innovative and reliable products
                     to meet the needs of our customers in every manufacturing industry.
                   </p>
                 </div>
@@ -538,7 +538,7 @@ export default function Home() {
                 {/* Footer */}
                 <div className="border-t border-gray-200 pt-6 text-sm text-gray-600 flex justify-between">
                   <div>
-                    <p>Loyalty Automation System</p>
+                    <p>SK Sales</p>
                     <p>GST: 33AACCL4592K1ZA</p>
                   </div>
                   <div className="text-right">

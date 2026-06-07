@@ -3,6 +3,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { AdminPanel, AdminShell, adminInputClass, adminPrimaryButtonClass } from "../_components/AdminShell";
+import { ViewToggle, RecordCard, CardField, DetailModal } from "../_components/RecordView";
 
 function priorityClass(priority) {
   const normalized = String(priority || "").toLowerCase();
@@ -16,12 +17,22 @@ function formatDate(value) {
   return new Date(value).toLocaleDateString();
 }
 
+function PriorityBadge({ priority }) {
+  return (
+    <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${priorityClass(priority)}`}>
+      {priority || "N/A"}
+    </span>
+  );
+}
+
 const AllLeadEnquiry = () => {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [enquiries, setEnquiries] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [view, setView] = useState("grid");
+  const [selected, setSelected] = useState(null);
 
   const fetchEnquiries = async (e) => {
     e.preventDefault();
@@ -60,13 +71,18 @@ const AllLeadEnquiry = () => {
         },
       });
       setEnquiries((previous) => previous.filter((enquiry) => enquiry.EnquiryNo !== enquiryNo));
+      setSelected((current) => (current && current.EnquiryNo === enquiryNo ? null : current));
     } catch (error) {
       alert(error.response?.data?.message || "Failed to delete lead.");
     }
   };
 
   return (
-    <AdminShell title="Lead Enquiries" subtitle="Search, review, and manage lead enquiries by date range.">
+    <AdminShell
+      title="Lead Enquiries"
+      subtitle="Search, review, and manage lead enquiries by date range."
+      actions={<ViewToggle view={view} onChange={setView} />}
+    >
       <AdminPanel title="Filters" subtitle="Choose a date range to view lead enquiries.">
         <form onSubmit={fetchEnquiries} className="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
           <label className="block">
@@ -85,51 +101,140 @@ const AllLeadEnquiry = () => {
 
       <AdminPanel title="Enquiries" subtitle={`${enquiries.length} records found`}>
         {error && <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead className="bg-slate-100 text-xs uppercase tracking-wide text-slate-600">
-              <tr>
-                <th className="px-4 py-3">Enquiry</th>
-                <th className="px-4 py-3">Company</th>
-                <th className="px-4 py-3">Contact</th>
-                <th className="px-4 py-3">Medium</th>
-                <th className="px-4 py-3">Priority</th>
-                <th className="px-4 py-3">Created</th>
-                <th className="px-4 py-3">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {enquiries.length === 0 ? (
-                <tr><td colSpan="7" className="px-4 py-10 text-center text-slate-500">No enquiries to display.</td></tr>
-              ) : enquiries.map((enquiry) => (
-                <tr key={enquiry._id || enquiry.EnquiryNo} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 font-medium text-slate-900">{enquiry.EnquiryNo || "N/A"}</td>
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-slate-900">{enquiry?.LeadDetails?.companyName || "N/A"}</div>
-                    <div className="text-xs text-slate-500">{enquiry?.LeadDetails?.Department || "N/A"}</div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div>{enquiry?.LeadDetails?.clientName || "N/A"}</div>
-                    <div className="text-xs text-slate-500">{enquiry?.ContactDetails?.MobileNumber || "N/A"}</div>
-                  </td>
-                  <td className="px-4 py-3">{enquiry?.LeadDetails?.LeadMedium || "N/A"}</td>
-                  <td className="px-4 py-3">
-                    <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${priorityClass(enquiry?.LeadDetails?.LeadPriority)}`}>
-                      {enquiry?.LeadDetails?.LeadPriority || "N/A"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">{formatDate(enquiry.createdAt)}</td>
-                  <td className="px-4 py-3">
-                    <button type="button" onClick={() => handleDelete(enquiry.EnquiryNo)} className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100">
-                      Delete
-                    </button>
-                  </td>
-                </tr>
+
+        {view === "grid" ? (
+          enquiries.length === 0 ? (
+            <div className="px-5 py-10 text-center text-slate-500">No enquiries to display.</div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {enquiries.map((enquiry) => (
+                <RecordCard
+                  key={enquiry._id || enquiry.EnquiryNo}
+                  title={enquiry.EnquiryNo || "N/A"}
+                  subtitle={enquiry?.LeadDetails?.companyName || "N/A"}
+                  badge={<PriorityBadge priority={enquiry?.LeadDetails?.LeadPriority} />}
+                  onClick={() => setSelected(enquiry)}
+                >
+                  <CardField label="Contact" value={enquiry?.LeadDetails?.clientName || "N/A"} />
+                  <CardField label="Mobile" value={enquiry?.ContactDetails?.MobileNumber || "N/A"} />
+                  <CardField label="Created" value={formatDate(enquiry.createdAt)} />
+                </RecordCard>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </div>
+          )
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-5 py-3">Enquiry</th>
+                  <th className="px-5 py-3">Company</th>
+                  <th className="px-5 py-3">Contact</th>
+                  <th className="px-5 py-3">Medium</th>
+                  <th className="px-5 py-3">Priority</th>
+                  <th className="px-5 py-3">Created</th>
+                  <th className="px-5 py-3">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {enquiries.length === 0 ? (
+                  <tr><td colSpan="7" className="px-5 py-10 text-center text-slate-500">No enquiries to display.</td></tr>
+                ) : enquiries.map((enquiry) => (
+                  <tr
+                    key={enquiry._id || enquiry.EnquiryNo}
+                    onClick={() => setSelected(enquiry)}
+                    className="cursor-pointer hover:bg-slate-50/75"
+                  >
+                    <td className="px-5 py-3 font-medium text-slate-900">{enquiry.EnquiryNo || "N/A"}</td>
+                    <td className="px-5 py-3">
+                      <div className="font-medium text-slate-900">{enquiry?.LeadDetails?.companyName || "N/A"}</div>
+                      <div className="text-xs text-slate-500">{enquiry?.LeadDetails?.Department || "N/A"}</div>
+                    </td>
+                    <td className="px-5 py-3">
+                      <div>{enquiry?.LeadDetails?.clientName || "N/A"}</div>
+                      <div className="text-xs text-slate-500">{enquiry?.ContactDetails?.MobileNumber || "N/A"}</div>
+                    </td>
+                    <td className="px-5 py-3">{enquiry?.LeadDetails?.LeadMedium || "N/A"}</td>
+                    <td className="px-5 py-3">
+                      <PriorityBadge priority={enquiry?.LeadDetails?.LeadPriority} />
+                    </td>
+                    <td className="px-5 py-3 text-slate-600">{formatDate(enquiry.createdAt)}</td>
+                    <td className="px-5 py-3">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(enquiry.EnquiryNo);
+                        }}
+                        className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </AdminPanel>
+
+      <DetailModal
+        open={!!selected}
+        title={selected?.EnquiryNo || "N/A"}
+        subtitle={selected?.LeadDetails?.companyName || "N/A"}
+        onClose={() => setSelected(null)}
+        footer={
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => handleDelete(selected?.EnquiryNo)}
+              className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
+            >
+              Delete
+            </button>
+          </div>
+        }
+      >
+        {selected && (
+          <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Enquiry No</dt>
+              <dd className="text-sm text-slate-900">{selected.EnquiryNo || "N/A"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Company</dt>
+              <dd className="text-sm text-slate-900">{selected?.LeadDetails?.companyName || "N/A"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Department</dt>
+              <dd className="text-sm text-slate-900">{selected?.LeadDetails?.Department || "N/A"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Contact</dt>
+              <dd className="text-sm text-slate-900">{selected?.LeadDetails?.clientName || "N/A"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Mobile Number</dt>
+              <dd className="text-sm text-slate-900">{selected?.ContactDetails?.MobileNumber || "N/A"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Lead Medium</dt>
+              <dd className="text-sm text-slate-900">{selected?.LeadDetails?.LeadMedium || "N/A"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Priority</dt>
+              <dd className="text-sm text-slate-900">
+                <PriorityBadge priority={selected?.LeadDetails?.LeadPriority} />
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Created</dt>
+              <dd className="text-sm text-slate-900">{formatDate(selected.createdAt)}</dd>
+            </div>
+          </dl>
+        )}
+      </DetailModal>
     </AdminShell>
   );
 };

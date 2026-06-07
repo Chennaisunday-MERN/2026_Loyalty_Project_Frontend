@@ -1,14 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { ChevronLeft } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { AdminShell, adminSecondaryButtonClass } from "../_components/AdminShell";
+import { ViewToggle, RecordCard, CardField, DetailModal } from "../_components/RecordView";
 
 const WorkvistAll = () => {
   const [serviceEngineers, setServiceEngineers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const router = useRouter();
+  const [view, setView] = useState("grid");
+  const [selected, setSelected] = useState(null);
 
   useEffect(() => {
     const fetchServiceEngineers = async () => {
@@ -27,98 +28,176 @@ const WorkvistAll = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen bg-gray-50">
-        <div className="flex flex-col items-center">
-          <div className="w-12 h-12 rounded-full border-4 border-gray-200 border-t-green-500 animate-spin"></div>
-          <p className="mt-4 text-gray-600 font-medium">Loading data...</p>
+      <AdminShell title="Work Visits" subtitle="Service engineer work visit records">
+        <div className="flex items-center justify-center rounded-xl border border-slate-200 bg-white py-16 shadow-sm">
+          <div className="flex flex-col items-center">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900"></div>
+            <p className="mt-4 text-sm font-medium text-slate-500">Loading data...</p>
+          </div>
         </div>
-      </div>
+      </AdminShell>
     );
   }
 
   if (error) {
     return (
-      <div className="flex justify-center items-center h-screen bg-gray-50">
-        <div className="bg-red-50 p-6 rounded-lg border border-red-200 shadow-sm">
-          <p className="text-red-600 font-medium text-lg">{error}</p>
-          <button 
+      <AdminShell title="Work Visits" subtitle="Service engineer work visit records">
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-sm font-medium text-red-600">{error}</p>
+          <button
             onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md transition duration-200"
+            className={`mt-4 ${adminSecondaryButtonClass}`}
           >
             Try Again
           </button>
         </div>
-      </div>
+      </AdminShell>
     );
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="container mx-auto px-4 sm:px-6 py-8">
-        <div className="flex items-center mb-8">
-          <button
-            onClick={() => router.push('/admin/adminDasboard')}
-            className="inline-flex items-center px-4 py-2 mb-6 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
->
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="h-5 w-5 mr-2"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-  </svg>
-  Back
-</button>
-          <h1 className="ml-4 text-2xl sm:text-3xl font-bold text-gray-800">Service Engineers</h1>
-        </div>
-
-        {serviceEngineers.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-            <p className="text-xl text-gray-500">No service engineers found.</p>
+    <AdminShell
+      title="Work Visits"
+      subtitle="Service engineer work visit records"
+      actions={<ViewToggle view={view} onChange={setView} />}
+    >
+      {view === "grid" ? (
+        serviceEngineers.length === 0 ? (
+          <div className="rounded-xl border border-slate-200 bg-white px-5 py-10 text-center text-slate-500 shadow-sm">
+            No service engineers found.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {serviceEngineers.map((engineer) => (
-              <div
+              <RecordCard
                 key={engineer._id}
-                className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 border border-gray-100"
+                title={engineer.name}
+                subtitle={engineer.companyName}
+                onClick={() => setSelected(engineer)}
               >
-                <div className="border-b border-gray-100 bg-green-50 px-6 py-4">
-                  <h3 className="text-xl font-bold text-gray-800">{engineer.name}</h3>
-                  <p className="text-green-600 text-sm">{engineer.companyName}</p>
-                </div>
-                <div className="p-6">
-                  <div className="space-y-3">
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Machine</p>
-                      <p className="text-gray-800">{engineer.MachineName}</p>
-                    </div>
-                    
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Product Description</p>
-                      <p className="text-gray-800">{engineer.ProductDescription}</p>
-                    </div>
-                    
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Complaints</p>
-                      <p className="text-gray-800">{engineer.Problems[0]?.description || "No complaints"}</p>
-                    </div>
-                    
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Assessment</p>
-                      <p className="text-gray-800">{engineer.Assessment || "No assessment provided"}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                <CardField label="Machine" value={engineer.MachineName} />
+                <CardField label="Product" value={engineer.ProductDescription} />
+                <CardField
+                  label="Complaint"
+                  value={engineer.Problems[0]?.description || "No complaints"}
+                />
+              </RecordCard>
             ))}
           </div>
+        )
+      ) : (
+        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-200 px-5 py-4">
+            <h2 className="text-base font-semibold text-slate-900">Service engineers</h2>
+            <p className="text-sm text-slate-500">
+              {serviceEngineers.length} record{serviceEngineers.length === 1 ? "" : "s"}
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-5 py-3">Engineer</th>
+                  <th className="px-5 py-3">Company</th>
+                  <th className="px-5 py-3">Machine</th>
+                  <th className="px-5 py-3">Complaints</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {serviceEngineers.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-5 py-10 text-center text-slate-500">
+                      No service engineers found.
+                    </td>
+                  </tr>
+                ) : (
+                  serviceEngineers.map((engineer) => (
+                    <tr
+                      key={engineer._id}
+                      onClick={() => setSelected(engineer)}
+                      className="cursor-pointer hover:bg-slate-50/75"
+                    >
+                      <td className="px-5 py-3 font-medium text-slate-900">{engineer.name}</td>
+                      <td className="px-5 py-3 text-slate-600">{engineer.companyName}</td>
+                      <td className="px-5 py-3 text-slate-600">{engineer.MachineName}</td>
+                      <td className="px-5 py-3 text-slate-600">
+                        {engineer.Problems[0]?.description || "No complaints"}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      <DetailModal
+        open={!!selected}
+        title={selected?.name}
+        subtitle={selected?.companyName}
+        onClose={() => setSelected(null)}
+      >
+        {selected && (
+          <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Engineer</dt>
+              <dd className="text-sm text-slate-900">{selected.name || "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Company</dt>
+              <dd className="text-sm text-slate-900">{selected.companyName || "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Client</dt>
+              <dd className="text-sm text-slate-900">{selected.clientName || "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Engineer ID</dt>
+              <dd className="text-sm text-slate-900">{selected.Eid || "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Date</dt>
+              <dd className="text-sm text-slate-900">{selected.Date || "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Location</dt>
+              <dd className="text-sm text-slate-900">{selected.Location || "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Machine</dt>
+              <dd className="text-sm text-slate-900">{selected.MachineName || "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Financial year</dt>
+              <dd className="text-sm text-slate-900">{selected.financialYear || "—"}</dd>
+            </div>
+            <div className="sm:col-span-2">
+              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Product description</dt>
+              <dd className="text-sm text-slate-900">{selected.ProductDescription || "—"}</dd>
+            </div>
+            <div className="sm:col-span-2">
+              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Complaints</dt>
+              <dd className="text-sm text-slate-900">
+                {selected.Problems && selected.Problems.length > 0 ? (
+                  <ul className="list-inside list-disc space-y-1">
+                    {selected.Problems.map((problem, index) => (
+                      <li key={index}>{problem.description || "—"}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  "No complaints"
+                )}
+              </dd>
+            </div>
+            <div className="sm:col-span-2">
+              <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Assessment</dt>
+              <dd className="text-sm text-slate-900">{selected.Assessment || "No assessment provided"}</dd>
+            </div>
+          </dl>
         )}
-      </div>
-    </div>
+      </DetailModal>
+    </AdminShell>
   );
 };
 

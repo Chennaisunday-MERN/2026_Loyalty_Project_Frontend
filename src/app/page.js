@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation'; 
 import axios from 'axios';
-import { Mail, Lock, RefreshCw } from 'lucide-react';
+import { Mail, Lock } from 'lucide-react';
 
 export default function Home() {
   const [user, setUser] = useState({
@@ -73,64 +73,76 @@ export default function Home() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-green-100 to-green-300">
-    <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-2xl">
-      <h1 className="text-4xl font-bold text-center text-green-600">Login</h1>
-  
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {errorMessage && <div className="text-red-600 text-center">{errorMessage}</div>}
-        
-        <div className="relative">
-          <label className="block mb-2 text-sm font-medium text-gray-600">Email</label>
-          <div className="flex items-center border-2 border-green-200 rounded-lg">
-            <Mail className="ml-3 text-green-500" size={20} />
-            <input
-              type="email"
-              name="email"
-              placeholder="Enter your email"
-              value={user.email}
-              onChange={handleChange}
-              className="w-full p-3 pl-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
-              required
-            />
-          </div>
+    <div className="flex items-center justify-center min-h-screen bg-white px-4">
+      <div className="w-full max-w-md p-8 bg-white border border-gray-200 rounded-xl shadow-sm">
+        <div className="mb-8 text-center">
+          <h1 className="text-2xl font-semibold text-gray-900">Welcome back</h1>
+          <p className="mt-1 text-sm text-gray-500">Sign in to your account to continue</p>
         </div>
-  
-        <div className="relative">
-          <label className="block mb-2 text-sm font-medium text-gray-600">Password</label>
-          <div className="flex items-center border-2 border-green-200 rounded-lg">
-            <Lock className="ml-3 text-green-500" size={20} />
-            <input
-              type="password"
-              name="password"
-              placeholder="Enter your password"
-              value={user.password}
-              onChange={handleChange}
-              className="w-full p-3 pl-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
-              required
-            />
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {errorMessage && (
+            <div className="px-4 py-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg">
+              {errorMessage}
+            </div>
+          )}
+
+          <div>
+            <label htmlFor="email" className="block mb-1.5 text-sm font-medium text-gray-700">
+              Email
+            </label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                id="email"
+                type="email"
+                name="email"
+                placeholder="you@company.com"
+                value={user.email}
+                onChange={handleChange}
+                className="w-full py-2.5 pl-10 pr-3 text-gray-900 placeholder-gray-400 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600"
+                required
+              />
+            </div>
           </div>
-        </div>
-  
-        <button
-          type="submit"
-          className="w-full py-3 text-white bg-green-600 rounded-lg hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105"
-        >
-          Login
-        </button>
-      </form>
-  
-      <div className="text-center">
-        <button
-          onClick={handlePasswordReset}
-          className="flex items-center justify-center w-full py-2 text-green-600 bg-green-100 rounded-lg hover:bg-green-200 transition duration-300"
-        >
-          <RefreshCw className="mr-2" size={16} />
-          Reset Password
-        </button>
+
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label htmlFor="password" className="text-sm font-medium text-gray-700">
+                Password
+              </label>
+              <button
+                type="button"
+                onClick={handlePasswordReset}
+                className="text-sm font-medium text-green-700 hover:text-green-800 hover:underline"
+              >
+                Forgot password?
+              </button>
+            </div>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                id="password"
+                type="password"
+                name="password"
+                placeholder="Enter your password"
+                value={user.password}
+                onChange={handleChange}
+                className="w-full py-2.5 pl-10 pr-3 text-gray-900 placeholder-gray-400 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600"
+                required
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Signing in…' : 'Sign in'}
+          </button>
+        </form>
       </div>
     </div>
-  </div>
-  
   );
 }

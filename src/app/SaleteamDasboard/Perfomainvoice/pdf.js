@@ -189,7 +189,7 @@ const PDFPage = ({ rows, freight, gst, invoiceData, name, address, gstNumber }) 
 
         <div className="mt-8 flex justify-end text-right font-bold text-xl">
           <div>
-            <p>For LOYALTY AUTOMATION PVT. LTD.</p>
+            <p>For SK SALES</p>
             <div className="mt-2 mr-9 flex justify-end items-center">
               <img src="/LoyaltySeal.jpeg" alt="Authorized Signatory" className="w-20 h-auto object-contain" />
             </div>

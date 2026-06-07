@@ -4,54 +4,34 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import {
+  Activity,
   BarChart3,
-  BriefcaseBusiness,
+  Boxes,
   CheckCircle2,
-  ClipboardList,
-  Eye,
   FileText,
-  Globe2,
-  Package,
-  ReceiptText,
-  ShoppingCart,
-  UserCheck,
-  UserRound,
+  PieChart,
+  TrendingUp,
+  UserPlus,
   Users,
-  XCircle,
 } from "lucide-react";
+import {
+  BarChart,
+  ChartCard,
+  ConversionPrompt,
+  DonutChart,
+  EnquiryCards,
+  LeadDeleteButton,
+  LeadDetailModal,
+  LineChart,
+  StatCard,
+  buildDailyTrend,
+  buildMediumBars,
+  buildPriorityDonut,
+  buildStageDonut,
+  stageOf,
+} from "../../_components/Analytics";
 
 const API = "http://localhost:5005/api";
-
-const priorityStyles = {
-  High: "bg-red-50 text-red-700 border-red-200",
-  Hot: "bg-red-50 text-red-700 border-red-200",
-  Medium: "bg-amber-50 text-amber-700 border-amber-200",
-  Warm: "bg-amber-50 text-amber-700 border-amber-200",
-  Low: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  Cold: "bg-emerald-50 text-emerald-700 border-emerald-200",
-};
-
-const stageLabels = {
-  "Enquiry-1stage": "New",
-  "Enquiry-2stage": "Assigned",
-  "Enquiry-3stage": "Quotation",
-  "Enquiry-4thstage": "Converted",
-};
-
-function normalizePriority(value) {
-  const priority = String(value || "").toLowerCase();
-  if (priority === "hot") return "High";
-  if (priority === "warm") return "Medium";
-  if (priority === "cold") return "Low";
-  if (priority === "high") return "High";
-  if (priority === "medium") return "Medium";
-  return "Low";
-}
-
-function formatDate(value) {
-  if (!value) return "N/A";
-  return new Date(value).toLocaleDateString();
-}
 
 function sortNewest(items) {
   return [...items].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
@@ -65,12 +45,12 @@ export default function Dashboard() {
   const [enquiries, setEnquiries] = useState([]);
   const [salesEmployees, setSalesEmployees] = useState([]);
   const [otherEmployees, setOtherEmployees] = useState([]);
-  const [selectedEnquiries, setSelectedEnquiries] = useState([]);
-  const [assignTo, setAssignTo] = useState("");
+  const [assignSelections, setAssignSelections] = useState({});
   const [conversionStatus, setConversionStatus] = useState({});
   const [quotationIcons, setQuotationIcons] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedLead, setSelectedLead] = useState(null);
 
   useEffect(() => {
     setToken(localStorage.getItem("admintokens") || "");
@@ -148,39 +128,45 @@ export default function Dashboard() {
     fetchData();
   }, [token, role, eid]);
 
-  const metrics = useMemo(() => {
+  const kpis = useMemo(() => {
     const total = enquiries.length;
-    const high = enquiries.filter((item) => normalizePriority(item?.LeadDetails?.LeadPriority) === "High").length;
-    const medium = enquiries.filter((item) => normalizePriority(item?.LeadDetails?.LeadPriority) === "Medium").length;
-    const low = enquiries.filter((item) => normalizePriority(item?.LeadDetails?.LeadPriority) === "Low").length;
-    const converted = enquiries.filter((item) => conversionStatus[item.EnquiryNo]).length;
-    const pending = Math.max(total - converted, 0);
-    return { total, high, medium, low, converted, pending };
+    const closed = enquiries.filter((item) => conversionStatus[item.EnquiryNo] || stageOf(item) === "Converted").length;
+    const pending = Math.max(total - closed, 0);
+    const rate = total === 0 ? 0 : Math.round((closed / total) * 1000) / 10;
+    return { total, closed, pending, rate };
   }, [enquiries, conversionStatus]);
 
-  const toggleSelection = (enquiryNo) => {
-    setSelectedEnquiries((previous) => (
-      previous.includes(enquiryNo)
-        ? previous.filter((item) => item !== enquiryNo)
-        : [...previous, enquiryNo]
-    ));
+  const stageDonut = useMemo(() => buildStageDonut(enquiries), [enquiries]);
+  const priorityDonut = useMemo(() => buildPriorityDonut(enquiries), [enquiries]);
+  const conversionDonut = useMemo(() => {
+    const converted = enquiries.filter((item) => conversionStatus[item.EnquiryNo]).length;
+    const pending = Math.max(enquiries.length - converted, 0);
+    return [
+      { label: "Customer Converted", value: converted, color: "#34d399" },
+      { label: "Pending", value: pending, color: "#f59e0b" },
+    ];
+  }, [enquiries, conversionStatus]);
+  const mediumBars = useMemo(() => buildMediumBars(enquiries), [enquiries]);
+  const dailyTrend = useMemo(() => buildDailyTrend(enquiries), [enquiries]);
+
+  const setAssigneeFor = (enquiryNo, value) => {
+    setAssignSelections((previous) => ({ ...previous, [enquiryNo]: value }));
   };
 
-  const assignSelected = async (event) => {
-    event.preventDefault();
-    if (!assignTo || selectedEnquiries.length === 0) {
-      alert("Select at least one enquiry and employee.");
+  const assignLead = async (enquiryNo) => {
+    const assignee = assignSelections[enquiryNo];
+    if (!assignee) {
+      alert("Select an employee to assign this enquiry.");
       return;
     }
 
     const endpoint = role === "sales head" ? "assignedto" : "assignedtoservice";
     try {
-      await axios.put(`${API}/${endpoint}`, { Eid: assignTo, EnquiryNo: selectedEnquiries }, { headers });
-      setAssignTo("");
-      setSelectedEnquiries([]);
+      await axios.put(`${API}/${endpoint}`, { Eid: assignee, EnquiryNo: [enquiryNo] }, { headers });
+      setAssignSelections((previous) => ({ ...previous, [enquiryNo]: "" }));
       await fetchData();
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to assign enquiries.");
+      alert(err.response?.data?.message || "Failed to assign enquiry.");
     }
   };
 
@@ -190,235 +176,183 @@ export default function Dashboard() {
     try {
       await axios.delete(`${API}/leadenquiry/${enquiryNo}`, { headers });
       setEnquiries((previous) => previous.filter((item) => item.EnquiryNo !== enquiryNo));
-      setSelectedEnquiries((previous) => previous.filter((item) => item !== enquiryNo));
+      setSelectedLead((previous) => (previous?.EnquiryNo === enquiryNo ? null : previous));
     } catch (err) {
       alert(err.response?.data?.message || "Failed to delete lead.");
     }
   };
 
-  const quickActions = [
-    { label: "Profile", icon: UserRound, href: "/SaleteamDasboard/viewprofile" },
-    ...(role === "Lead filler" ? [
-      { label: "Enter Enquiry", icon: ClipboardList, href: "/SaleteamDasboard/Enquirypage" },
-      { label: "View Leads", icon: Eye, href: "/SaleteamDasboard/Leadenquiryview" },
-      { label: "Product Enquiries", icon: Globe2, href: "/SaleteamDasboard/ProductEnquiries" },
-    ] : []),
-    { label: "Converted", icon: CheckCircle2, href: "/SaleteamDasboard/CustomerConverted" },
-    { label: "Not Converted", icon: XCircle, href: "/SaleteamDasboard/Cnc" },
-    { label: "Customers", icon: Users, href: "/SaleteamDasboard/Getcustomerdetails" },
-    { label: "Inventory", icon: Package, href: "/SaleteamDasboard/Inventory" },
-    { label: "Product Request", icon: BriefcaseBusiness, href: "/SaleteamDasboard/Productrequest" },
-    { label: "Purchase Orders", icon: ShoppingCart, href: "/SaleteamDasboard/GetPO" },
-    { label: "PI", icon: ReceiptText, href: "/SaleteamDasboard/GetPI" },
-    { label: "Quotations", icon: FileText, href: "/SaleteamDasboard/GetEidQuotation" },
-    { label: "Sales Orders", icon: BarChart3, href: "/SaleteamDasboard/GetSO" },
-  ];
-
   const employeeOptions = role === "sales head" ? salesEmployees : otherEmployees;
 
+  const renderCardActions = (item) => {
+    const isConverted = conversionStatus[item.EnquiryNo];
+    const hasQuote = quotationIcons[item.EnquiryNo] === "Editaccess" || quotationIcons[item.EnquiryNo] === "quotsaccess";
+    if (role === "Sales Employee") {
+      return (
+        <div className="flex flex-wrap items-center justify-end gap-1.5">
+          {!isConverted ? (
+            <>
+              <MiniButton label="Convert" onClick={() => router.push(`/SaleteamDasboard/customerconversion?EnquiryNo=${item.EnquiryNo}`)} />
+              <MiniButton label="Lost" variant="secondary" onClick={() => router.push(`/SaleteamDasboard/customernotconverted?EnquiryNo=${item.EnquiryNo}`)} />
+            </>
+          ) : (
+            <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-semibold text-blue-700">Converted</span>
+          )}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); router.push(`/SaleteamDasboard/Quotation?EnquiryNo=${item.EnquiryNo}`); }}
+            title={hasQuote ? "View Quote" : "Create Quotation"}
+            aria-label={hasQuote ? "View Quote" : "Create Quotation"}
+            className={`rounded-md p-1.5 ${hasQuote ? "bg-blue-50 text-blue-700 hover:bg-blue-100" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+          >
+            <FileText size={15} />
+          </button>
+        </div>
+      );
+    }
+    if (role === "sales head") {
+      return <LeadDeleteButton onDelete={() => deleteLead(item.EnquiryNo)} />;
+    }
+    return null;
+  };
+
+  const renderAssign = (item) => (
+    <div className="space-y-2">
+      <select
+        value={assignSelections[item.EnquiryNo] || ""}
+        onChange={(event) => setAssigneeFor(item.EnquiryNo, event.target.value)}
+        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+      >
+        <option value="">{role === "sales head" ? "Assign to sales employee…" : "Assign service/project employee…"}</option>
+        {employeeOptions.map((employee) => (
+          <option key={employee.Eid} value={employee.Eid}>{employee.Eid} - {employee.name}</option>
+        ))}
+      </select>
+      <button
+        type="button"
+        onClick={() => assignLead(item.EnquiryNo)}
+        disabled={!assignSelections[item.EnquiryNo]}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-700 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:from-blue-800 hover:to-indigo-700 disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300"
+      >
+        <UserPlus size={16} />
+        Assign
+      </button>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-6 text-slate-900">
+    <div className="px-4 py-6 sm:px-6">
       <div className="mx-auto max-w-7xl space-y-6">
-        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-sm font-medium uppercase tracking-wide text-slate-500">{role || "Sales"} workspace</p>
-              <h1 className="mt-1 text-2xl font-semibold text-slate-950">Lead Operations Dashboard</h1>
-              <p className="mt-1 text-sm text-slate-600">Newest lead enquiries appear first. Track priority, ownership, progress, and conversion from one place.</p>
-            </div>
+        <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{role || "Sales"} workspace</p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">Lead Operations Dashboard</h1>
+            <p className="mt-1 text-sm text-slate-500">Track priority, ownership, progress, and conversion from one place.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => router.push("/SaleteamDasboard/Inventory")}
+              title="Inventory"
+              aria-label="Inventory"
+              className="rounded-md border border-slate-300 bg-white p-2.5 text-blue-700 shadow-sm hover:bg-blue-50"
+            >
+              <Boxes size={18} />
+            </button>
             <button
               onClick={fetchData}
-              className="w-full rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 lg:w-auto"
+              className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-100"
             >
               Refresh
             </button>
           </div>
+        </header>
+
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard label="Total Leads" value={kpis.total} sub="All enquiries" icon={Users} iconColor="text-blue-500" />
+          <StatCard label="Closed" value={kpis.closed} sub="Won + Lost deals" icon={CheckCircle2} color="text-emerald-600" iconColor="text-emerald-500" />
+          <StatCard label="Pending" value={kpis.pending} sub="In progress" icon={Activity} color="text-amber-600" iconColor="text-amber-500" />
+          <StatCard label="Conv. Rate" value={`${kpis.rate}%`} sub="Success rate" icon={TrendingUp} color="text-violet-600" iconColor="text-violet-500" />
         </section>
 
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
-          <MetricCard label="Total Leads" value={metrics.total} tone="slate" />
-          <MetricCard label="Hot / High" value={metrics.high} tone="red" />
-          <MetricCard label="Warm / Medium" value={metrics.medium} tone="amber" />
-          <MetricCard label="Cold / Low" value={metrics.low} tone="emerald" />
-          <MetricCard label="Converted" value={metrics.converted} tone="blue" />
-          <MetricCard label="Open" value={metrics.pending} tone="violet" />
+        <section className="grid gap-4 lg:grid-cols-3">
+          <ChartCard title="Enquiry Stages" subtitle="Current pipeline status" icon={Activity} titleColor="text-blue-700" iconBg="bg-blue-50 text-blue-600">
+            <DonutChart data={stageDonut} />
+          </ChartCard>
+          <ChartCard title="Priority Levels" subtitle="Urgency distribution" icon={PieChart} titleColor="text-rose-600" iconBg="bg-rose-50 text-rose-500">
+            <DonutChart data={priorityDonut} />
+          </ChartCard>
+          <ChartCard title="Conversion Status" subtitle="Customer conversion tracking" icon={CheckCircle2} titleColor="text-emerald-600" iconBg="bg-emerald-50 text-emerald-500">
+            <DonutChart data={conversionDonut} />
+          </ChartCard>
         </section>
 
-        <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-600">Work Boards</h2>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
-            {quickActions.map((action) => {
-              const Icon = action.icon;
-              return (
-                <button
-                  key={action.href}
-                  onClick={() => router.push(action.href)}
-                  className="flex min-h-20 items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-left hover:border-emerald-300 hover:bg-emerald-50"
-                >
-                  <span className="rounded-md bg-white p-2 text-emerald-700 shadow-sm">
-                    <Icon size={18} />
-                  </span>
-                  <span className="text-sm font-medium text-slate-800">{action.label}</span>
-                </button>
-              );
-            })}
-          </div>
+        <section className="grid gap-4 lg:grid-cols-2">
+          <ChartCard title="Enquiry Type Distribution" subtitle="How leads are acquired - by channel/medium" icon={BarChart3} titleColor="text-emerald-700" iconBg="bg-emerald-50 text-emerald-600">
+            <BarChart data={mediumBars} />
+          </ChartCard>
+          <ChartCard title="Daily Lead Trends" subtitle="Number of enquiries received each day" icon={TrendingUp} titleColor="text-blue-700" iconBg="bg-blue-50 text-blue-600">
+            <LineChart data={dailyTrend} />
+          </ChartCard>
         </section>
 
         {error && <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
-        <form onSubmit={assignSelected} className="rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div className="flex flex-col gap-4 border-b border-slate-200 p-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-950">Lead Pipeline</h2>
-              <p className="text-sm text-slate-600">
-                {role === "sales head"
-                  ? "Select leads and assign them to sales employees."
-                  : "Review assigned leads, convert customers, create quotations, and assign service work when needed."}
-              </p>
-            </div>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <select
-                value={assignTo}
-                onChange={(event) => setAssignTo(event.target.value)}
-                className="min-w-64 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-              >
-                <option value="">{role === "sales head" ? "Assign to sales employee" : "Assign service/project employee"}</option>
-                {employeeOptions.map((employee) => (
-                  <option key={employee.Eid} value={employee.Eid}>{employee.Eid} - {employee.name}</option>
-                ))}
-              </select>
-              <button
-                type="submit"
-                disabled={!assignTo || selectedEnquiries.length === 0}
-                className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-              >
-                Assign {selectedEnquiries.length ? `(${selectedEnquiries.length})` : ""}
-              </button>
-            </div>
+        {loading ? (
+          <div className="rounded-xl border border-slate-200 bg-white px-5 py-10 text-center text-sm text-slate-500 shadow-sm">
+            Loading leads...
           </div>
+        ) : (
+          <EnquiryCards
+            leads={enquiries}
+            title="Lead Enquiries"
+            subtitle="Click any card to view full details"
+            onView={setSelectedLead}
+            renderActions={renderCardActions}
+            renderExtra={role === "sales head" ? renderAssign : undefined}
+            pageSize={9}
+          />
+        )}
 
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="bg-slate-100 text-xs uppercase tracking-wide text-slate-600">
-                <tr>
-                  <th className="px-4 py-3">Select</th>
-                  <th className="px-4 py-3">Lead</th>
-                  <th className="px-4 py-3">Owner / Stage</th>
-                  <th className="px-4 py-3">Priority</th>
-                  <th className="px-4 py-3">Contact</th>
-                  <th className="px-4 py-3">Created</th>
-                  <th className="px-4 py-3">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {loading ? (
-                  <tr><td colSpan="7" className="px-4 py-10 text-center text-slate-500">Loading leads...</td></tr>
-                ) : enquiries.length === 0 ? (
-                  <tr><td colSpan="7" className="px-4 py-10 text-center text-slate-500">No leads available.</td></tr>
-                ) : enquiries.map((item) => {
-                  const priority = normalizePriority(item?.LeadDetails?.LeadPriority);
-                  const isConverted = conversionStatus[item.EnquiryNo];
-                  return (
-                    <tr key={item._id} className="align-top hover:bg-slate-50">
-                      <td className="px-4 py-4">
-                        <input
-                          type="checkbox"
-                          checked={selectedEnquiries.includes(item.EnquiryNo)}
-                          onChange={() => toggleSelection(item.EnquiryNo)}
-                          className="h-4 w-4 rounded border-slate-300 text-emerald-600"
-                        />
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="font-semibold text-slate-900">{item?.LeadDetails?.companyName || "N/A"}</div>
-                        <div className="text-slate-600">{item?.LeadDetails?.clientName || "N/A"}</div>
-                        <div className="mt-1 text-xs text-slate-500">{item.EnquiryNo}</div>
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="font-medium text-slate-800">{item.Eid || "Unassigned"}</div>
-                        <div className="mt-1 rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600">{stageLabels[item.Status] || item.Status || "N/A"}</div>
-                      </td>
-                      <td className="px-4 py-4">
-                        <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${priorityStyles[priority]}`}>
-                          {priority === "High" ? "Hot" : priority === "Medium" ? "Warm" : "Cold"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4">
-                        <div>{item?.ContactDetails?.MobileNumber || "N/A"}</div>
-                        <div className="text-slate-500">{item?.ContactDetails?.PrimaryMail || "N/A"}</div>
-                      </td>
-                      <td className="px-4 py-4 text-slate-600">{formatDate(item.createdAt)}</td>
-                      <td className="px-4 py-4">
-                        {role === "Sales Employee" ? (
-                          <div className="flex flex-wrap gap-2">
-                            {!isConverted ? (
-                              <>
-                                <ActionButton label="Convert" onClick={() => router.push(`/SaleteamDasboard/customerconversion?EnquiryNo=${item.EnquiryNo}`)} />
-                                <ActionButton label="Lost" variant="secondary" onClick={() => router.push(`/SaleteamDasboard/customernotconverted?EnquiryNo=${item.EnquiryNo}`)} />
-                              </>
-                            ) : (
-                              <span className="rounded-md bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700">Converted</span>
-                            )}
-                            <ActionButton
-                              label={quotationIcons[item.EnquiryNo] === "Editaccess" || quotationIcons[item.EnquiryNo] === "quotsaccess" ? "View Quote" : "Quote"}
-                              onClick={() => router.push(`/SaleteamDasboard/Quotation?EnquiryNo=${item.EnquiryNo}`)}
-                            />
-                            <ActionButton label="Status" variant="secondary" onClick={() => router.push(`/SaleteamDasboard/EnquiryStatus?EnquiryNo=${item.EnquiryNo}`)} />
-                          </div>
-                        ) : (
-                          <div className="flex flex-wrap gap-2">
-                            <span className="rounded-md border border-slate-200 px-3 py-2 text-xs text-slate-500">Select to assign</span>
-                            {role === "sales head" && (
-                              <button
-                                type="button"
-                                onClick={() => deleteLead(item.EnquiryNo)}
-                                className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
-                              >
-                                Delete
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </form>
+        <LeadDetailModal
+          lead={selectedLead}
+          open={!!selectedLead}
+          onClose={() => setSelectedLead(null)}
+          conversionSection={
+            selectedLead && role === "Sales Employee" && !conversionStatus[selectedLead.EnquiryNo] ? (
+              <ConversionPrompt
+                onYes={() => router.push(`/SaleteamDasboard/customerconversion?EnquiryNo=${selectedLead.EnquiryNo}`)}
+                onNo={() => router.push(`/SaleteamDasboard/customernotconverted?EnquiryNo=${selectedLead.EnquiryNo}`)}
+              />
+            ) : null
+          }
+          footerExtra={
+            selectedLead && role === "sales head" ? (
+              <LeadDeleteButton onDelete={() => deleteLead(selectedLead.EnquiryNo)} />
+            ) : selectedLead && role === "Sales Employee" ? (
+              <div className="flex gap-2">
+                <MiniButton
+                  label={quotationIcons[selectedLead.EnquiryNo] === "Editaccess" || quotationIcons[selectedLead.EnquiryNo] === "quotsaccess" ? "View Quote" : "Quote"}
+                  onClick={() => router.push(`/SaleteamDasboard/Quotation?EnquiryNo=${selectedLead.EnquiryNo}`)}
+                />
+                <MiniButton label="Status" variant="secondary" onClick={() => router.push(`/SaleteamDasboard/EnquiryStatus?EnquiryNo=${selectedLead.EnquiryNo}`)} />
+              </div>
+            ) : null
+          }
+        />
       </div>
     </div>
   );
 }
 
-function MetricCard({ label, value, tone }) {
-  const tones = {
-    slate: "border-slate-200 bg-white text-slate-900",
-    red: "border-red-200 bg-red-50 text-red-800",
-    amber: "border-amber-200 bg-amber-50 text-amber-800",
-    emerald: "border-emerald-200 bg-emerald-50 text-emerald-800",
-    blue: "border-blue-200 bg-blue-50 text-blue-800",
-    violet: "border-violet-200 bg-violet-50 text-violet-800",
-  };
-  return (
-    <div className={`rounded-lg border p-4 shadow-sm ${tones[tone]}`}>
-      <div className="text-2xl font-semibold">{value}</div>
-      <div className="mt-1 text-sm font-medium">{label}</div>
-    </div>
-  );
-}
-
-function ActionButton({ label, onClick, variant = "primary" }) {
+function MiniButton({ label, onClick, variant = "primary" }) {
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
       className={variant === "primary"
-        ? "rounded-md bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-700"
-        : "rounded-md border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100"}
+        ? "rounded-md bg-slate-900 px-2.5 py-1 text-[10px] font-semibold text-white hover:bg-slate-700"
+        : "rounded-md border border-slate-300 px-2.5 py-1 text-[10px] font-semibold text-slate-700 hover:bg-slate-100"}
     >
       {label}
     </button>

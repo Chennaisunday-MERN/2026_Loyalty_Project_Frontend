@@ -2,19 +2,37 @@
 
 import axios from 'axios';
 import { useState, useEffect } from 'react';
-import { ChevronLeft, Eye, EyeOff, CheckCircle, AlertTriangle, DollarSign, Package, Calendar, Tag, ChevronRight } from 'lucide-react';
+import { ChevronLeft, CheckCircle, AlertTriangle, DollarSign, Package, Calendar, Tag, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { AdminShell, adminSecondaryButtonClass } from '../_components/AdminShell';
+import { ViewToggle, RecordCard, CardField, DetailModal } from '../_components/RecordView';
+
+const FIELD_LABELS = {
+  paymentTerms: 'Payment Terms',
+  warrantyTerms: 'Warranty Terms',
+  deliveryTerms: 'Delivery Terms',
+  gst: 'GST',
+  gstAmount: 'GST Amount',
+  totalAmount: 'Total Amount',
+  hsnCode: 'HSN Code',
+  unitDescription: 'Unit Description',
+  uom: 'UOM',
+  quantity: 'Quantity',
+  unitPrice: 'Unit Price',
+  amount: 'Amount',
+};
 
 const Purchaseorder = () => {
   const [getdata, setGetdata] = useState([]);
-  const [expandedItems, setExpandedItems] = useState({});
+  const [view, setView] = useState('grid');
+  const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const purchasesPerPage = 4;
-  
+  const purchasesPerPage = 9;
+
   const token = typeof window !== 'undefined' ? localStorage.getItem('admintokens') : null;
   const router = useRouter();
 
@@ -32,7 +50,7 @@ const Purchaseorder = () => {
       const response = await axios.get('http://localhost:5005/api-purchaseorder/getPO', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (response.data && response.data.length > 0) {
         setGetdata(response.data);
         setTotalPages(Math.ceil(response.data.length / purchasesPerPage));
@@ -71,30 +89,18 @@ const Purchaseorder = () => {
   // Change page handler
   const changePage = (pageNumber) => {
     if (pageNumber < 1 || pageNumber > totalPages) return;
-    
-    setCurrentPage(pageNumber);
-    setExpandedItems({}); // Reset expanded items when changing page
-  };
 
-  const handleViewMore = (index) => {
-    setExpandedItems(prev => {
-      // Create a new object with all values set to false (collapse all)
-      const newExpandedItems = {};
-      
-      // Toggle the clicked item
-      newExpandedItems[index] = !prev[index];
-      
-      return newExpandedItems;
-    });
+    setCurrentPage(pageNumber);
+    setSelected(null); // Close the detail modal when changing page
   };
 
   // Returns the appropriate icon for the field
   const getFieldIcon = (field) => {
     switch(field) {
-      case 'warrantyTerms': return <Calendar size={14} className="text-indigo-500" />;
-      case 'deliveryTerms': return <Package size={14} className="text-indigo-500" />;
-      case 'paymentTerms': return <DollarSign size={14} className="text-indigo-500" />;
-      case 'gst': return <Tag size={14} className="text-indigo-500" />;
+      case 'warrantyTerms': return <Calendar size={14} className="text-slate-400" />;
+      case 'deliveryTerms': return <Package size={14} className="text-slate-400" />;
+      case 'paymentTerms': return <DollarSign size={14} className="text-slate-400" />;
+      case 'gst': return <Tag size={14} className="text-slate-400" />;
       default: return null;
     }
   };
@@ -103,7 +109,7 @@ const Purchaseorder = () => {
   const getPaginationRange = () => {
     const delta = 2; // Number of pages to show before and after current page
     const range = [];
-    
+
     for (
       let i = Math.max(2, currentPage - delta);
       i <= Math.min(totalPages - 1, currentPage + delta);
@@ -125,291 +131,274 @@ const Purchaseorder = () => {
     if (totalPages > 1) {
       range.push(totalPages);
     }
-    
+
     return range;
   };
 
   const currentPageData = getCurrentPageData();
 
+  const poTitle = (item, index) =>
+    `Purchase Order ${item.EnquiryNo || (((currentPage - 1) * purchasesPerPage) + index + 1)}`;
+
+  const payableBadge = (item) => (
+    <span
+      className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${
+        item.payableAmount
+          ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+          : 'border-amber-200 bg-amber-50 text-amber-700'
+      }`}
+    >
+      {item.payableAmount ? `Payable ${item.payableAmount}` : 'Pending'}
+    </span>
+  );
+
   return (
-    <div className="bg-gradient-to-br from-indigo-50 to-blue-50 min-h-screen">
-      <div className="max-w-7xl mx-auto p-6">
-        {/* Header with back button */}
-        <div className="flex items-center justify-between mb-8">
-          <button
-            onClick={() => router.push('/admin/adminDasboard')}
-            className="inline-flex items-center px-4 py-2 mb-6 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-              Back
-            </button>
-          
-          <h1 className="text-3xl font-bold text-indigo-700">Purchase Order Management</h1>
-          
-          {/* Page info indicator */}
-          <div className="bg-white shadow-sm rounded-lg px-4 py-2 text-sm text-gray-600">
+    <AdminShell
+      title="PO Requests"
+      subtitle="Review purchase order requests and their line items."
+      actions={
+        <div className="flex items-center gap-3">
+          <ViewToggle view={view} onChange={setView} />
+          <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
             Page {currentPage} of {totalPages}
-          </div>
+          </span>
         </div>
-        
-        {/* Status Messages */}
-        {loading && (
-          <div className="flex items-center justify-center mb-6">
-            <div className="bg-white p-4 rounded-lg shadow-md flex items-center gap-3">
-              <div className="animate-spin h-5 w-5 border-t-2 border-b-2 border-indigo-500 rounded-full"></div>
-              <p className="text-indigo-600 font-medium">Loading purchase orders...</p>
-            </div>
-          </div>
-        )}
-        
-        {errorMessage && (
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-md shadow">
-            <div className="flex items-center">
-              <AlertTriangle className="text-red-500 mr-3" size={20} />
-              <p className="text-red-700">{errorMessage}</p>
-            </div>
-          </div>
-        )}
-        
-        {successMessage && (
-          <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6 rounded-md shadow animate-fadeIn">
-            <div className="flex items-center">
-              <CheckCircle className="text-green-500 mr-3" size={20} />
-              <p className="text-green-700">{successMessage}</p>
-            </div>
-          </div>
-        )}
+      }
+    >
+      {/* Status Messages */}
+      {loading && (
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600"></div>
+          <p className="text-sm text-slate-600">Loading purchase orders...</p>
+        </div>
+      )}
 
-        {/* Purchase Order Grid */}
-        {currentPageData.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {errorMessage && (
+        <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-5 py-4">
+          <AlertTriangle className="mt-0.5 shrink-0 text-red-600" size={16} />
+          <p className="text-sm text-red-700">{errorMessage}</p>
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4">
+          <CheckCircle className="mt-0.5 shrink-0 text-emerald-600" size={16} />
+          <p className="text-sm text-emerald-700">{successMessage}</p>
+        </div>
+      )}
+
+      {/* Grid view */}
+      {view === 'grid' && (
+        currentPageData.length > 0 ? (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {currentPageData.map((item, index) => (
-              <div 
-                key={index} 
-                className={`bg-white rounded-xl overflow-hidden shadow-lg transition-all duration-300 
-                  ${expandedItems[index] ? 'lg:col-span-3 md:col-span-2 shadow-xl z-10 scale-100' : 'hover:shadow-xl hover:-translate-y-1'}`}
+              <RecordCard
+                key={index}
+                title={poTitle(item, index)}
+                subtitle={item.Eid ? `ID ${item.Eid}` : 'No ID'}
+                badge={payableBadge(item)}
+                onClick={() => setSelected({ item, index })}
               >
-                {/* Card Header */}
-                <div className={`p-4 text-white flex justify-between items-center ${
-                  expandedItems[index] 
-                    ? 'bg-gradient-to-r from-indigo-700 to-blue-700' 
-                    : 'bg-gradient-to-r from-indigo-600 to-blue-600'
-                }`}>
-                  <h3 className="text-lg font-semibold flex items-center">
-                    Purchase Order {item.EnquiryNo || (((currentPage - 1) * purchasesPerPage) + index + 1)}
-                  </h3>
-                </div>
-                
-                {/* Card Body */}
-                <div className="p-5">
-                  <div className="space-y-4">
-                    {/* Basic Fields */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">ID</label>
-                        <input
-                          type="text"
-                          value={item.Eid || ""}
-                          className="w-full px-3 py-2 bg-gray-50 border rounded-md text-sm transition-colors border-gray-200"
-                          disabled
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Payable Amount</label>
-                        <div className="relative">
-                          <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
-                          </span>
-                          <input
-                            type="text"
-                            value={item.payableAmount || ""}
-                            className="w-full pl-8 pr-3 py-2 bg-gray-50 border rounded-md text-sm transition-colors border-gray-200"
-                            disabled
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Expanded Content */}
-                  {expandedItems[index] && (
-                    <div className="mt-6 space-y-6 animate-fadeIn">
-                      {/* Divider */}
-                      <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                          <div className="w-full border-t border-gray-200"></div>
-                        </div>
-                        <div className="relative flex justify-center">
-                          <span className="bg-white px-3 text-sm text-indigo-600 font-medium">
-                            Purchase Order Details
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {["paymentTerms", "warrantyTerms", "deliveryTerms", "gst", "gstAmount", "totalAmount"].map((field) => (
-                          <div key={field} className="relative group">
-                            <label className="block text-xs font-medium text-gray-500 mb-1 group-hover:text-indigo-600 transition-colors flex items-center gap-1">
-                              {getFieldIcon(field)}
-                              {field}
-                            </label>
-                            <input
-                              type="text"
-                              value={item[field] || ""}
-                              className="w-full px-3 py-2 bg-gray-50 border rounded-md text-sm transition-colors border-gray-200 group-hover:border-indigo-200"
-                              disabled
-                            />
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Products Section */}
-                      {item.rows && item.rows.length > 0 && (
-                        <div className="mt-8">
-                          {/* Products heading with count badge */}
-                          <div className="flex items-center justify-between mb-4">
-                            <h4 className="text-md font-semibold text-indigo-700 flex items-center">
-                              <Package size={18} className="mr-2" />
-                              Products
-                              <span className="ml-2 bg-indigo-100 text-indigo-700 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                                {item.rows.length}
-                              </span>
-                            </h4>
-                          </div>
-                          
-                          <div className="space-y-6">
-                            {item.rows.map((product, productIndex) => (
-                              <div 
-                                key={productIndex} 
-                                className="bg-white rounded-lg p-4 border border-indigo-100 shadow-sm hover:shadow-md transition-shadow"
-                              >
-                                {/* Product fields */}
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                  {["hsnCode", "unitDescription", "uom", "quantity", "unitPrice", "amount"].map((field) => (
-                                    <div key={field} className="relative group">
-                                      <label className="block text-xs font-medium text-gray-500 mb-1 group-hover:text-indigo-600 transition-colors">
-                                        {field}
-                                      </label>
-                                      <input
-                                        type="text"
-                                        value={product[field] || ""}
-                                        className="w-full px-3 py-2 bg-white border rounded-md text-sm transition-colors border-gray-200 group-hover:border-indigo-200"
-                                        disabled
-                                      />
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Card Footer */}
-                <div className="bg-gray-50 p-4 border-t border-gray-100 flex justify-between items-center">
-                  <button
-                    type="button"
-                    onClick={() => handleViewMore(index)}
-                    className={`flex items-center transition-colors text-sm font-medium px-3 py-1.5 rounded-md ${
-                      expandedItems[index] 
-                        ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' 
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    {expandedItems[index] ? (
-                      <>
-                        <EyeOff size={16} className="mr-1" /> Hide Details
-                      </>
-                    ) : (
-                      <>
-                        <Eye size={16} className="mr-1" /> View Details
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
+                <CardField label="Payable Amount" value={item.payableAmount || '—'} />
+                <CardField label="Total Amount" value={item.totalAmount || '—'} />
+                <CardField label="Payment Terms" value={item.paymentTerms || '—'} />
+                <CardField label="Products" value={item.rows ? item.rows.length : 0} />
+              </RecordCard>
             ))}
           </div>
         ) : (
-          <div className="bg-white rounded-xl shadow-md p-8 text-center">
-            <div className="flex flex-col items-center justify-center space-y-4">
-              <div className="bg-gray-100 p-4 rounded-full">
-                <AlertTriangle size={32} className="text-gray-400" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-700">No Purchase Order Data</h3>
-              <p className="text-gray-500 max-w-md">There are currently no purchase orders available. Please try again later or create a new purchase order.</p>
+          !loading && (
+            <section className="rounded-xl border border-slate-200 bg-white px-5 py-10 text-center text-slate-500 shadow-sm">
+              <p>There are currently no purchase orders available.</p>
               <button
+                type="button"
                 onClick={fetchData}
-                className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center"
+                className={`${adminSecondaryButtonClass} mt-4`}
               >
                 Refresh
               </button>
-            </div>
-          </div>
-        )}
+            </section>
+          )
+        )
+      )}
 
-        {/* Pagination controls */}
-        {totalPages > 1 && (
-          <div className="flex justify-center items-center mt-8">
-            <nav className="inline-flex rounded-md shadow-sm -space-x-px bg-white" aria-label="Pagination">
-              <button
-                onClick={() => changePage(currentPage - 1)}
-                disabled={currentPage === 1}
-                className={`relative inline-flex items-center px-3 py-2 rounded-l-md border border-gray-300 text-sm font-medium ${
-                  currentPage === 1
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-white text-indigo-600 hover:bg-indigo-50'
-                }`}
-              >
-                <ChevronLeft size={16} />
-                <span className="sr-only">Previous</span>
-              </button>
-              
-              {getPaginationRange().map((page, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => typeof page === 'number' ? changePage(page) : null}
-                  disabled={page === "..."}
-                  className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                    page === currentPage
-                      ? 'z-10 bg-indigo-600 text-white border-indigo-600'
-                      : page === "..."
-                      ? 'bg-white text-gray-500 border-gray-300 cursor-default'
-                      : 'bg-white text-indigo-600 border-gray-300 hover:bg-indigo-50'
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-              
-              <button
-                onClick={() => changePage(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className={`relative inline-flex items-center px-3 py-2 rounded-r-md border border-gray-300 text-sm font-medium ${
-                  currentPage === totalPages
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-white text-indigo-600 hover:bg-indigo-50'
-                }`}
-              >
-                <ChevronRight size={16} />
-                <span className="sr-only">Next</span>
-              </button>
-            </nav>
+      {/* List view */}
+      {view === 'list' && (
+        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-200 px-5 py-4">
+            <h2 className="text-base font-semibold text-slate-900">Purchase orders</h2>
+            <p className="text-sm text-slate-500">Click a row to view terms, amounts, and products.</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-5 py-3">Order</th>
+                  <th className="px-5 py-3">ID</th>
+                  <th className="px-5 py-3">Payable Amount</th>
+                  <th className="px-5 py-3">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {currentPageData.length > 0 ? (
+                  currentPageData.map((item, index) => (
+                    <tr
+                      key={index}
+                      onClick={() => setSelected({ item, index })}
+                      className="cursor-pointer hover:bg-slate-50/75"
+                    >
+                      <td className="px-5 py-3 font-medium text-slate-900">
+                        {poTitle(item, index)}
+                      </td>
+                      <td className="px-5 py-3 text-slate-600">{item.Eid || "—"}</td>
+                      <td className="px-5 py-3 text-slate-600">{item.payableAmount || "—"}</td>
+                      <td className="px-5 py-3">{payableBadge(item)}</td>
+                    </tr>
+                  ))
+                ) : (
+                  !loading && (
+                    <tr>
+                      <td colSpan={4} className="px-5 py-10 text-center text-slate-500">
+                        <p>There are currently no purchase orders available.</p>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            fetchData();
+                          }}
+                          className={`${adminSecondaryButtonClass} mt-4`}
+                        >
+                          Refresh
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {/* Detail modal */}
+      <DetailModal
+        open={!!selected}
+        title={selected ? poTitle(selected.item, selected.index) : ''}
+        subtitle={selected && selected.item.Eid ? `ID ${selected.item.Eid}` : undefined}
+        onClose={() => setSelected(null)}
+      >
+        {selected && (
+          <div className="space-y-6">
+            <div>
+              <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-slate-500">
+                Purchase Order Details
+              </h3>
+              <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+                {["paymentTerms", "warrantyTerms", "deliveryTerms", "gst", "gstAmount", "totalAmount"].map((field) => (
+                  <div key={field}>
+                    <dt className="flex items-center gap-1 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      {getFieldIcon(field)}
+                      {FIELD_LABELS[field] || field}
+                    </dt>
+                    <dd className="text-sm text-slate-900">{selected.item[field] || "—"}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+
+            {/* Products Section */}
+            {selected.item.rows && selected.item.rows.length > 0 && (
+              <div>
+                <div className="mb-3 flex items-center gap-2">
+                  <h3 className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    Products
+                  </h3>
+                  <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+                    {selected.item.rows.length}
+                  </span>
+                </div>
+                <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-left text-sm">
+                      <thead className="bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
+                        <tr>
+                          {["hsnCode", "unitDescription", "uom", "quantity", "unitPrice", "amount"].map((field) => (
+                            <th key={field} className="px-5 py-3">
+                              {FIELD_LABELS[field] || field}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {selected.item.rows.map((product, productIndex) => (
+                          <tr key={productIndex} className="hover:bg-slate-50/75">
+                            {["hsnCode", "unitDescription", "uom", "quantity", "unitPrice", "amount"].map((field) => (
+                              <td key={field} className="px-5 py-3 text-slate-600">
+                                {product[field] || "—"}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
-      </div>
-    </div>
+      </DetailModal>
+
+      {/* Pagination controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center">
+          <nav className="inline-flex -space-x-px overflow-hidden rounded-md border border-slate-300 bg-white shadow-sm" aria-label="Pagination">
+            <button
+              onClick={() => changePage(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={`relative inline-flex items-center border-r border-slate-200 px-3 py-2 text-sm font-medium ${
+                currentPage === 1
+                  ? 'cursor-not-allowed text-slate-300'
+                  : 'text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <ChevronLeft size={16} />
+              <span className="sr-only">Previous</span>
+            </button>
+
+            {getPaginationRange().map((page, idx) => (
+              <button
+                key={idx}
+                onClick={() => typeof page === 'number' ? changePage(page) : null}
+                disabled={page === "..."}
+                className={`relative inline-flex items-center border-r border-slate-200 px-4 py-2 text-sm font-medium ${
+                  page === currentPage
+                    ? 'z-10 bg-slate-900 text-white'
+                    : page === "..."
+                    ? 'cursor-default text-slate-400'
+                    : 'text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+
+            <button
+              onClick={() => changePage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className={`relative inline-flex items-center px-3 py-2 text-sm font-medium ${
+                currentPage === totalPages
+                  ? 'cursor-not-allowed text-slate-300'
+                  : 'text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <ChevronRight size={16} />
+              <span className="sr-only">Next</span>
+            </button>
+          </nav>
+        </div>
+      )}
+    </AdminShell>
   );
 };
 

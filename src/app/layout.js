@@ -1,6 +1,5 @@
 "use client";
 import { Geist, Geist_Mono } from "next/font/google";
-import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Logout from "./logout";
 import "./globals.css";
@@ -17,7 +16,6 @@ const geistMono = Geist_Mono({
 });
 
 export default function RootLayout({ children }) {
-  const pathname = usePathname();
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -41,33 +39,27 @@ export default function RootLayout({ children }) {
     setIsClient(true);
   }, []);
 
-  if (!isClient) return null; // Prevents rendering on the server
-
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased flex min-h-screen flex-col bg-slate-50 text-slate-900`}>
         <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
-          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
-            <div className="flex items-center gap-3">
-              <img src="/logo123.png" alt="Loyalty Automation" className="h-12 w-auto max-w-[170px] object-contain" />
-              <div className="hidden sm:block">
-                <div className="text-sm font-semibold uppercase tracking-wide text-slate-900">Loyalty Automation Pvt Ltd</div>
-                <div className="text-xs text-slate-500">CRM and operations workspace</div>
-              </div>
+          <div className="mx-auto flex h-14 max-w-screen-2xl items-center justify-between gap-4 px-4">
+            <div>
+              <div className="text-sm font-semibold tracking-tight text-slate-900">SK Sales</div>
+              <div className="text-xs text-slate-500">CRM and operations workspace</div>
             </div>
-            <div className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">
+            <div className="rounded-md bg-red-600 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-red-700">
               <Logout />
             </div>
           </div>
         </header>
 
-        <main className="flex-grow overflow-y-auto">
-          {children}
+        <main className="flex flex-grow flex-col">
+          {/* Pages rely on browser-only APIs (localStorage tokens), so render them client-side only.
+              The <html>/<body> shell must always render to avoid hydration errors. */}
+          {isClient ? children : null}
         </main>
       </body>
     </html>
-  
-  
-
   );
 }
