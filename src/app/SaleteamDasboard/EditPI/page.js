@@ -4,6 +4,8 @@ import axios from 'axios';
 import { useRouter, useSearchParams } from "next/navigation";
 import html2pdf from 'html2pdf.js';
 import { toWords } from 'number-to-words';
+import { ArrowLeft, Download } from 'lucide-react';
+import { LoadingBlock, ErrorBanner, SecondaryButton } from "../../_components/ui";
 
 const PDFPage = () => {
   const contentRef = useRef();
@@ -84,9 +86,9 @@ const PDFPage = () => {
     router.push(`/invoice/detail?piId=${piId}`);
   };
 
-  if (loading) return <div className="text-center mt-10">Loading invoice data...</div>;
-  if (error) return <div className="text-red-500 text-center mt-10">{error}</div>;
-  if (!invoiceData) return <div className="text-red-500 text-center mt-10">No invoice data found</div>;
+  if (loading) return <div className="px-4 py-6 sm:px-6"><div className="mx-auto max-w-3xl"><LoadingBlock label="Loading invoice data..." /></div></div>;
+  if (error) return <div className="px-4 py-6 sm:px-6"><div className="mx-auto max-w-3xl"><ErrorBanner>{error}</ErrorBanner></div></div>;
+  if (!invoiceData) return <div className="px-4 py-6 sm:px-6"><div className="mx-auto max-w-3xl"><ErrorBanner>No invoice data found</ErrorBanner></div></div>;
 
     // Calculating the totals and other necessary values
     const subtotal = Number(rows.reduce((acc, item) => Number(acc) + Number(item.total), 0));
@@ -195,9 +197,20 @@ const PDFPage = () => {
           </div>
           </div>
         </div>
-        <div className="flex justify-between mt-5">
-          <button onClick={handleBack} className="btn">Go Back</button>
-          <button ref={buttonRef} onClick={handleDownload} className="btn">Download</button>
+        <div className="flex justify-between mt-5 pb-6">
+          <SecondaryButton onClick={handleBack}>
+            <ArrowLeft size={16} />
+            Go Back
+          </SecondaryButton>
+          <button
+            ref={buttonRef}
+            type="button"
+            onClick={handleDownload}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
+          >
+            <Download size={16} />
+            Download
+          </button>
         </div>
       </div>
     );

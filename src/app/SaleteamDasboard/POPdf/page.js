@@ -1,8 +1,10 @@
 "use client";
 import { useRef, useEffect, useState } from "react";
 import axios from "axios";
-import { useSearchParams,useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Head from "next/head";
+import { Download } from "lucide-react";
+import { PageHeader, PrimaryButton, LoadingBlock, ErrorBanner } from "../../_components/ui";
 
 export default function Poppdf() {
   const contentRef = useRef(null);
@@ -13,6 +15,7 @@ export default function Poppdf() {
   const [error, setError] = useState("");
   const [pdfReady, setPdfReady] = useState(false);
   const router = useRouter();
+
   // Load html2pdf script
   useEffect(() => {
     const script = document.createElement("script");
@@ -49,198 +52,235 @@ export default function Poppdf() {
     fetchData();
   }, [poNumber]);
 
+  const formatCurrency = (amount) => {
+    const n = Number(amount);
+    if (isNaN(n)) return "₹ 0.00";
+    return "₹ " + n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  const formatDate = (d) => {
+    if (!d) return "N/A";
+    const date = new Date(d);
+    if (isNaN(date.getTime())) return "N/A";
+    return date.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
+  };
+
+  const pdfOptions = () => ({
+    margin: [5, 5, 5, 5],
+    filename: `PurchaseOrder_${(poNumber || "PO").replace(/\//g, "_")}.pdf`,
+    image: { type: "jpeg", quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true },
+    // Keep boxes/sections and table rows whole across page breaks.
+    pagebreak: { mode: ["css", "legacy"], avoid: [".avoid-break", "tr", "thead", "img"] },
+  });
+
   const generatePDF = () => {
     if (!pdfReady || !window.html2pdf) {
       alert("PDF library not ready yet. Please try again in a few seconds.");
       return;
     }
-
     if (!contentRef.current) {
       alert("PDF content is not ready.");
       return;
     }
-
-    // Delay to ensure full DOM render before generating PDF
     setTimeout(() => {
-      window.html2pdf()
-        .from(contentRef.current)
-        .set({
-          margin: [10, 10, 10, 10],
-          filename: `PurchaseOrder_${poNumber}.pdf`,
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2 },
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        })
-        .save();
+      window.html2pdf().from(contentRef.current).set(pdfOptions()).save();
     }, 100);
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div className="text-red-500">{error}</div>;
+  if (loading) return <LoadingBlock label="Loading…" />;
+  if (error) return <ErrorBanner>{error}</ErrorBanner>;
 
   return (
     <div>
       <Head>
         <title>Purchase Order - {poNumber}</title>
         <meta name="description" content="Purchase Order PDF Generator" />
+        <style>
+          {`
+          @media print {
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          }
+          @page { size: A4; margin: 0; }
+          .avoid-break { page-break-inside: avoid; break-inside: avoid; }
+          table, tr, td, th, thead, tbody, tfoot {
+            page-break-inside: avoid; break-inside: avoid;
+          }
+          thead { display: table-header-group; }
+          `}
+        </style>
       </Head>
 
-      <main className="p-4 max-w-7xl mx-auto">
-      <button
-          onClick={() => router.push('/SaleteamDasboard/GetPO')}
-          className="inline-flex items-center px-4 py-2 mb-6 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-            Back
-          </button>
-        <button
-          onClick={generatePDF}
-          className="mb-4 px-4 py-2 ml-7 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          Generate PDF
-        </button>
+      <main className="p-4 max-w-5xl mx-auto">
+        <PageHeader
+          eyebrow="Procurement"
+          title="Purchase Order"
+          subtitle="Preview and download the purchase order."
+          onBack={() => router.push("/SaleteamDasboard/GetPO")}
+          actions={
+            <PrimaryButton onClick={generatePDF}>
+              <Download size={16} />
+              Generate PDF
+            </PrimaryButton>
+          }
+        />
 
-        <div ref={contentRef} className="bg-white border-2 border-gray-950">
-          <div className="mb-3 p-0 m-0">
-            <div className="text-lg font-bold mt-2 text-left text-red-600 mb-4 pl-5">
-              GST 33AACCL4592K1ZA
+        {/* ===== PDF Content ===== */}
+        <div ref={contentRef} className="mt-6 bg-white" style={{ maxWidth: "210mm", margin: "0 auto" }}>
+          {/* Letterhead */}
+          <div className="px-6 pt-6 pb-2 avoid-break">
+            <div className="flex items-center gap-4">
+              <img src="/logo123.png" alt="Loyalty Automation Logo" className="h-14 w-auto object-contain" />
+              <div className="leading-tight">
+                <h1 className="text-2xl font-extrabold text-red-600 tracking-wide">LOYALTY AUTOMATION PVT.LTD.</h1>
+                <p className="text-xs font-semibold text-blue-800">
+                  No. 27/1, Vaigai Colony 2nd Street, 12th Avenue Ashok Nagar, Ch-83.
+                </p>
+                <p className="text-xs font-semibold text-blue-800">
+                  Ph: 044 43838063, 9551687011 &nbsp; Mail id: loyaltyautomation@gmail.com
+                </p>
+              </div>
             </div>
-            <div className="w-full bg-black h-1 mb-4" style={{ marginLeft: 0, marginRight: 0 }}></div>
-            <img
-              src="/p4.jpeg"
-              alt="Company Logo"
-              className="w-full h-24 object-contain"
-            />
+            <p className="text-red-600 font-bold text-sm mt-1">GST:33AACCL4592K1ZA</p>
           </div>
-          <div className="w-full bg-black h-1 " style={{ marginLeft: 0, marginRight: 0 }}></div>
-<h1 className="text-center text-3xl font-bold text-red-600">Purchase Order</h1>
-<div className="w-full bg-black h-1 " style={{ marginLeft: 0, marginRight: 0 }}></div>
 
+          {/* Title */}
+          <div className="text-center py-3 avoid-break">
+            <h2 className="text-2xl font-bold tracking-wide text-gray-900">PURCHASE ORDER</h2>
+          </div>
 
-          
+          {/* PO No / Date */}
+          <div className="flex justify-between items-center px-6 py-2 bg-gray-100 border-y border-gray-300 text-sm avoid-break">
+            <span><span className="font-bold">PO No:</span> {getdata?.poNumber || poNumber}</span>
+            <span><span className="font-bold">PO Date:</span> {formatDate(getdata?.createdAt)}</span>
+          </div>
 
-          <div className="flex justify-between items-stretch w-full h-[200px] ml-1">
-            {/* Left Section */}
-            <div className="w-1/3 flex flex-col justify-start mt-4">
-              <div className="font-bold">Consignee:</div>
-              <div className="font-bold">{getdata?.SupplierName}</div>
-              <div className="">{getdata?.Address}.</div>
-              <div className="pt-4 pb-8 font-bold">
-                <strong>GSTIN/UIN:</strong> {getdata?.GSTIN || "N/A"}
-              </div>
+          {/* Supplier */}
+          <div className="flex bg-indigo-50 border-b border-gray-300 avoid-break">
+            <div className="w-1/2 px-4 py-3">
+              <p className="text-xs font-bold text-gray-600 uppercase mb-1">Supplier</p>
+              <p className="text-lg font-bold text-blue-900">{getdata?.SupplierName || "N/A"}</p>
+              {getdata?.SuppNO && (
+                <p className="text-sm text-gray-700 mt-1">Contact: {getdata.SuppNO}</p>
+              )}
             </div>
-
-            {/* Center Section (Separator) */}
-            <div className="w-1 bg-black ml-16 self-stretch"></div>
-
-            {/* Right Section */}
-            <div className="w-1/3 flex flex-col justify-start mx-10 my-10 text-[14px] leading-6">
-              <div>
-                <strong>P.O. No :</strong> {getdata?.poNumber}
-              </div>
-              <div>
-                <strong>Date:</strong> {new Date(getdata?.createdAt).toLocaleDateString()}
-              </div>
-              <div>
-                <strong>Ref.Q.No :</strong> {getdata?.RefQNo}
-              </div>
-              <div>
-                <strong>Ref.Q.Date :</strong> {getdata?.QDate ? new Date(getdata.QDate).toLocaleDateString("en-GB") : ""}
-              </div>
+            <div className="w-1/2 px-4 py-3 text-sm text-gray-800">
+              <p>{getdata?.Address || ""}</p>
+              {getdata?.GSTIN && (
+                <p className="font-bold text-gray-900 mt-2">GSTIN: {getdata.GSTIN}</p>
+              )}
+              {getdata?.RefQNo && (
+                <p className="mt-2">Ref Q.No: {getdata.RefQNo}{getdata?.QDate ? ` (${formatDate(getdata.QDate)})` : ""}</p>
+              )}
             </div>
           </div>
 
-          <table className="w-full text-sm border-collapse border border-2">
-            <thead className="border-t-[3px] border-b-[4px] border-black">
-              <tr className="bg-blue-700 text-white">
-                <th className="border-x border-black px-2 py-1">S. No</th>
-                <th className="border-x border-black px-2 py-1">HSN Code</th>
-                <th className="border-x border-black px-2 py-1">Unit Description</th>
-                <th className="border-x border-black px-2 py-1">UOM</th>
-                <th className="border-x border-black px-2 py-1">Qty</th>
-                <th className="border-x border-black px-2 py-1">Unit Price</th>
-                <th className="border-x border-black px-2 py-1">Total</th>
-              </tr>
-            </thead>
-            <tbody className="font-semibold">
-              {getdata?.rows?.map((item, index) => (
-                <tr key={index}>
-                  <td className="border-x border-black py-1 text-center">{index + 1}</td>
-                  <td className="border-x border-black py-1 text-center">{item?.hsnCode}</td>
-                  <td className="border-x border-black py-1 text-center"><p><b>{item?.unitDescription}</b><br></br>{item.Description}</p></td>
-                  <td className="border-x border-black py-1 text-center">{item?.uom}</td>
-                  <td className="border-x border-black py-1 text-center">{item?.quantity}</td>
-                  <td className="border-x border-black py-1 text-center">{item?.unitPrice}</td>
-                  <td className="border-x border-black py-1 text-center">{item?.amount}</td>
+          {/* Bill To / Ship To */}
+          <div className="flex border-b border-gray-300 avoid-break">
+            <div className="w-1/2 border-r border-gray-300">
+              <div className="font-bold text-blue-900 px-4 pt-3 text-sm">BILL TO</div>
+              <div className="px-4 pb-3 pt-1 text-sm text-gray-800">
+                <p className="font-bold">Loyalty Automation Pvt Ltd</p>
+                <p>277/-G FLOOR, VAIGAI COLONY 2nd CROSS ST,</p>
+                <p>12th Avenue, Ashok Nagar, Chennai.,</p>
+                <p>Tamil Nadu, 600083,</p>
+                <p>India</p>
+                <p className="font-bold mt-1">GSTIN: 33AACCL4592K1ZA</p>
+              </div>
+            </div>
+            <div className="w-1/2">
+              <div className="font-bold text-blue-900 px-4 pt-3 text-sm">SHIP TO</div>
+              <div className="px-4 pb-3 pt-1 text-sm text-gray-800">
+                <p className="font-bold">Loyalty Automation Pvt Ltd</p>
+                <p>277/-G FLOOR, VAIGAI COLONY 2nd CROSS ST,</p>
+                <p>12th Avenue, Ashok Nagar, Chennai.,</p>
+                <p>Tamil Nadu, 600083,</p>
+                <p>India</p>
+                <p className="font-bold mt-1">GSTIN: 33AACCL4592K1ZA</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Items table */}
+          <div className="px-6 py-4">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="bg-gray-100 text-gray-900">
+                  <th className="border border-gray-400 px-2 py-2 text-center font-bold w-12">No.</th>
+                  <th className="border border-gray-400 px-2 py-2 text-left font-bold">Description</th>
+                  <th className="border border-gray-400 px-2 py-2 text-center font-bold">HSN/SAC</th>
+                  <th className="border border-gray-400 px-2 py-2 text-center font-bold">Quantity</th>
+                  <th className="border border-gray-400 px-2 py-2 text-right font-bold">Unit Price</th>
+                  <th className="border border-gray-400 px-2 py-2 text-right font-bold">Amount</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="pl-1 flex justify-between text-sm">
-            <div className="w-2/3 mb-4">
-              <strong className="text-base">Terms & Conditions:</strong>
-              <div className="mt-2">
-                <div className="font-bold">
-                  <strong>Delivery:</strong> {getdata?.deliveryTerms || "N/A"}
-                </div>
-                <div className="font-bold">
-                  <strong>Payment:</strong> {getdata?.paymentTerms || "N/A"}
-                </div>
-                <div className="font-bold">
-                  <strong>Warranty:</strong> {getdata?.warrantyTerms || "N/A"}
-                </div>
-              </div>
-            </div>
-
-            <div className="w-1/3 text-base flex flex-col items-end justify-start mr-20">
-  <div className="flex justify-between w-full">
-    <span className="w-1/2 text-center font-semibold">Sub Total:</span>
-    <span className="w-1/2 text-right pr-12">{getdata?.totalAmount || "N/A"}</span>
-  </div>
-  <div className="flex justify-between w-full">
-    <span className="w-1/2 text-center font-semibold">GST @ {getdata?.gst || "N/A"}%:</span>
-    <span className="w-1/2 text-right pr-12">{getdata?.gstAmount || "N/A"}</span>
-  </div>
-</div>
+              </thead>
+              <tbody>
+                {getdata?.rows?.map((item, index) => (
+                  <tr key={index}>
+                    <td className="border border-gray-400 px-2 py-2 text-center align-top">{index + 1}</td>
+                    <td className="border border-gray-400 px-2 py-2 align-top">
+                      <p className="font-bold text-blue-900">{item?.unitDescription}</p>
+                      {item?.Description && <p className="text-gray-600">{item.Description}</p>}
+                    </td>
+                    <td className="border border-gray-400 px-2 py-2 text-center align-top">{item?.hsnCode}</td>
+                    <td className="border border-gray-400 px-2 py-2 text-center align-top">
+                      {item?.quantity} {item?.uom}
+                    </td>
+                    <td className="border border-gray-400 px-2 py-2 text-right align-top">{formatCurrency(item?.unitPrice)}</td>
+                    <td className="border border-gray-400 px-2 py-2 text-right align-top">{formatCurrency(item?.amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="avoid-break">
+                  <td colSpan="5" className="border border-gray-400 px-2 py-2 text-right font-semibold text-gray-700">Sub Total</td>
+                  <td className="border border-gray-400 px-2 py-2 text-right font-semibold text-gray-700">{formatCurrency(getdata?.totalAmount)}</td>
+                </tr>
+                <tr className="avoid-break">
+                  <td colSpan="5" className="border border-gray-400 px-2 py-2 text-right font-semibold text-gray-700">
+                    GST @ {getdata?.gst ?? 18}%
+                  </td>
+                  <td className="border border-gray-400 px-2 py-2 text-right font-semibold text-gray-700">{formatCurrency(getdata?.gstAmount)}</td>
+                </tr>
+                <tr className="avoid-break">
+                  <td colSpan="5" className="border border-gray-400 px-2 py-3 text-right text-lg font-bold text-gray-900">TOTAL:</td>
+                  <td className="border border-gray-400 px-2 py-3 text-right text-lg font-bold text-gray-900">{formatCurrency(getdata?.payableAmount)}</td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
 
-          <div className="w-full bg-black h-1 " style={{ marginLeft: 0, marginRight: 0 }}></div>
-<div className="text-right mr-20 text-lg font-bold mt-2"><strong className="pr-6">TOTAL :</strong> <span className="pr-10">{getdata?.payableAmount || "N/A"}</span> </div>  
-<div className="w-full bg-black h-1 " style={{ marginLeft: 0, marginRight: 0 }}></div>
-
-          <div className="flex justify-end mr-10 mt-3">
-            <div className="flex flex-col items-end text-right">
-              <strong className="text-base font-extrabold">FOR LOYALITY AUTOMATION PVT.LTD.</strong>
-              <img src="/sign.jpeg" alt="signature" className="h-16 mt-2 w-36" />
-              <h6 className="text-base font-semibold">Authorised Signatory</h6>
+          {/* Terms & Signatory */}
+          <div className="flex justify-between items-start px-6 pt-2 pb-6 avoid-break">
+            <div className="w-1/2 text-sm">
+              <p className="font-bold text-gray-900 mb-2">Terms &amp; Conditions:</p>
+              <p className="mb-1"><span className="font-bold">Delivery:</span> {getdata?.deliveryTerms || "N/A"}</p>
+              <p className="mb-1"><span className="font-bold">Payment:</span> {getdata?.paymentTerms || "N/A"}</p>
+              <p className="mb-1"><span className="font-bold">Warranty:</span> {getdata?.warrantyTerms || "N/A"}</p>
+            </div>
+            <div className="w-1/2 flex flex-col items-end text-right">
+              <p className="font-bold text-gray-900">FOR LOYALTY AUTOMATION PVT.LTD.</p>
+              <img src="/LoyaltySeal.jpeg" alt="Company Seal" className="h-24 w-24 object-contain my-1" />
+              <p className="font-bold text-gray-900">Authorised Signatory</p>
             </div>
           </div>
 
-          <div className="w-full bg-black h-1" style={{ marginLeft: 0, marginRight: 0 }}></div>
-          <div>
-            <div className="flex justify-between items-center mt-2">
-              {["/deltas.jpg", "/Schneider.png", "/phoenix.png", "/motovario.png"].map((src, idx, arr) => (
-                <div
-                  key={idx}
-                  className={`w-1/4 p-1 ${idx === 0 ? 'text-left' : idx === arr.length - 1 ? 'text-right' : 'text-center'}`}
-                >
-                  <img
-                    src={src}
-                    alt={`Logo ${idx + 1}`}
-                    className="mr-9 ml-4 h-10 w-35 object-contain inline-block"
-                  />
-                </div>
-              ))}
+          {/* Footer */}
+          <div className="border-t border-gray-300 pt-4 pb-6 text-center text-xs text-gray-600 avoid-break">
+            <p>
+              Contact No: 044 43838063, +91 9840129532 &nbsp; Email: info@loyaltyautomation.com, loyaltyautomation@gmail.com
+            </p>
+            <p>
+              loyaltyapisales21@gmail.com, loyaltyautomation@gmail.com &nbsp; Website: www.loyaltyautomation.com
+            </p>
+            <p>Regd Office: No. 27/1, Vaigai Colony 2nd Street, 12th Avenue Ashok Nagar, Chennai - 600 083</p>
+            <p className="font-bold text-gray-800 mt-1">GSTIN: 33AACCL4592K1ZA</p>
+            <div className="flex justify-center items-center gap-8 mt-4">
+              <img src="/deltas.jpg" alt="Delta" className="h-8 object-contain" />
+              <img src="/Schneider.png" alt="Schneider" className="h-8 object-contain" />
+              <img src="/phoenix.png" alt="Phoenix" className="h-8 object-contain" />
+              <img src="/motovario.png" alt="Motovario" className="h-8 object-contain" />
             </div>
           </div>
         </div>

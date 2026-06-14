@@ -3,6 +3,19 @@
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { Pencil, X, Plus, Save } from "lucide-react";
+import {
+  PageShell,
+  PageHeader,
+  Card,
+  PrimaryButton,
+  SecondaryButton,
+  TableWrap,
+  Th,
+  Td,
+  LoadingBlock,
+  EmptyState,
+} from "../../_components/ui";
 
 export default function EditPOPage() {
   const searchParams = useSearchParams();
@@ -38,21 +51,47 @@ export default function EditPOPage() {
     fetchPO();
   }, [poNumber, token]);
 
+  // Recalculate the order totals from the line items and GST percentage.
+  const computeTotals = (rows, gst) => {
+    const totalAmount = (rows || []).reduce(
+      (sum, r) => sum + (parseFloat(r.amount) || 0),
+      0
+    );
+    const gstValue = parseFloat(gst) || 0;
+    const gstAmount = (totalAmount * gstValue) / 100;
+    const payableAmount = totalAmount + gstAmount;
+    return {
+      totalAmount: totalAmount.toFixed(2),
+      gstAmount: gstAmount.toFixed(2),
+      payableAmount: payableAmount.toFixed(2),
+    };
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setPoData((prev) => ({ ...prev, [name]: value }));
+    setPoData((prev) => {
+      const next = { ...prev, [name]: value };
+      if (name === "gst") {
+        Object.assign(next, computeTotals(prev.rows, value));
+      }
+      return next;
+    });
   };
 
   const handleRowChange = (index, field, value) => {
     const updatedRows = [...poData.rows];
     updatedRows[index][field] = value;
 
-    const quantity = parseFloat(updatedRows[index].quantity) || 0;
-    const unitPrice = parseFloat(updatedRows[index].unitPrice) || 0;
+    // Editing Quantity or Unit Price auto-derives the row Amount.
+    // Editing the Amount directly keeps the typed value as-is.
+    if (field === "quantity" || field === "unitPrice") {
+      const quantity = parseFloat(updatedRows[index].quantity) || 0;
+      const unitPrice = parseFloat(updatedRows[index].unitPrice) || 0;
+      updatedRows[index].amount = (quantity * unitPrice).toFixed(2);
+    }
 
-    updatedRows[index].amount = quantity * unitPrice;
-
-    setPoData({ ...poData, rows: updatedRows });
+    // Recompute the order totals from the (possibly manually edited) amounts.
+    setPoData({ ...poData, rows: updatedRows, ...computeTotals(updatedRows, poData.gst) });
   };
 
   const handleAddProduct = () => {
@@ -101,162 +140,145 @@ export default function EditPOPage() {
     setIsEditing((prev) => !prev);
   };
 
-  if (loading) return <p>Loading Purchase Order...</p>;
-  if (!poData) return <p>No Purchase Order found.</p>;
+  if (loading) return <PageShell><LoadingBlock label="Loading Purchase Order..." /></PageShell>;
+  if (!poData) return <PageShell><EmptyState title="No Purchase Order found." /></PageShell>;
+
+  const inputClass =
+    "w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 read-only:bg-slate-100";
+  const cellInputClass =
+    "w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 read-only:bg-slate-100";
+  const labelClass = "mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500";
 
   return (
-    <div className="max-w-7xl mx-auto p-6 bg-gradient-to-r from-indigo-50 via-indigo-100 to-indigo-200 shadow-lg rounded-xl">
-      <button
-          onClick={() => router.push("/SaleteamDasboard/GetPO")}
-          className="inline-flex items-center px-4 py-2 mb-6 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-            Back
-          </button>
-    <h2 className="text-3xl font-semibold text-center text-indigo-800 mb-6">
-      Purchase Order Details: {poNumber}
-    </h2>
-  
-    <div className="flex justify-end mb-6">
-      <button
-        onClick={toggleEditMode}
-        className="px-6 py-2 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 transition duration-300"
-      >
-        {isEditing ? "Cancel Edit" : "Edit PO"}
-      </button>
-    </div>
-  
-    {/* Editable Fields */}
-    <div className="space-y-6">
+    <PageShell>
+      <PageHeader
+        eyebrow="Procurement"
+        title={`Purchase Order: ${poNumber}`}
+        subtitle="Review and edit purchase order details."
+        onBack={() => router.push("/SaleteamDasboard/GetPO")}
+        actions={
+          <SecondaryButton onClick={toggleEditMode}>
+            {isEditing ? <X size={16} /> : <Pencil size={16} />}
+            {isEditing ? "Cancel Edit" : "Edit PO"}
+          </SecondaryButton>
+        }
+      />
+
       {/* General Terms */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {[
-          { label: "Supplier Name", name: "SupplierName", type: "text" },
-          { label: "Financial Year", name: "financialYear", type: "text", readOnly: true },
-          { label: "Address", name: "Address", type: "textarea" },
-          { label: "Ref Quote No", name: "RefQNo", type: "text" },
-          { label: "GSTIN", name: "GSTIN", type: "text" },
-          { label: "Quote Date", name: "QDate", type: "date" },
-        ].map(({ label, name, type, readOnly = false }) => (
-          <div key={name} className="flex flex-col">
-            <label className="text-lg font-medium text-gray-700 mb-2">{label}:</label>
-            {type === "textarea" ? (
-              <textarea
-                name={name}
-                value={poData[name] || ""}
-                onChange={handleChange}
-                readOnly={readOnly || !isEditing}
-                className="px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-200"
-              />
-            ) : (
-              <input
-                type={type}
-                name={name}
-                value={poData[name] || ""}
-                onChange={handleChange}
-                readOnly={readOnly || !isEditing}
-                className="px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-200"
-              />
-            )}
-          </div>
-        ))}
-      </div>
-  
+      <Card>
+        <h3 className="text-base font-semibold text-slate-900">General Details</h3>
+        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+          {[
+            { label: "Supplier Name", name: "SupplierName", type: "text" },
+            { label: "Financial Year", name: "financialYear", type: "text", readOnly: true },
+            { label: "Address", name: "Address", type: "textarea" },
+            { label: "Ref Quote No", name: "RefQNo", type: "text" },
+            { label: "GSTIN", name: "GSTIN", type: "text" },
+            { label: "Quote Date", name: "QDate", type: "date" },
+          ].map(({ label, name, type, readOnly = false }) => (
+            <div key={name} className="flex flex-col">
+              <label className={labelClass}>{label}</label>
+              {type === "textarea" ? (
+                <textarea
+                  name={name}
+                  value={poData[name] || ""}
+                  onChange={handleChange}
+                  readOnly={readOnly || !isEditing}
+                  className={inputClass}
+                />
+              ) : (
+                <input
+                  type={type}
+                  name={name}
+                  value={poData[name] || ""}
+                  onChange={handleChange}
+                  readOnly={readOnly || !isEditing}
+                  className={inputClass}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      </Card>
+
       {/* Items Section */}
-      <div className="mt-8">
-        <h3 className="text-2xl font-medium text-gray-800 mb-4">Items</h3>
-        <div className="overflow-x-auto bg-white shadow-md rounded-lg">
-          <table className="min-w-full text-sm text-left text-gray-500">
-            <thead className="bg-indigo-600 text-white">
-              <tr>
-                {["HSN Code", "Unit Description","Description", "UOM", "Quantity", "Unit Price", "Amount"].map((header) => (
-                  <th key={header} className="px-4 py-2">{header}</th>
+      <div className="space-y-4">
+        <h3 className="text-base font-semibold text-slate-900">Items</h3>
+        <TableWrap>
+          <thead>
+            <tr>
+              {["HSN Code", "Unit Description", "Description", "UOM", "Quantity", "Unit Price", "Amount"].map((header) => (
+                <Th key={header}>{header}</Th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {poData.rows?.map((row, index) => (
+              <tr key={row._id || index} className="hover:bg-slate-50">
+                {["hsnCode", "unitDescription", "Description", "uom", "quantity", "unitPrice", "amount"].map((field) => (
+                  <Td key={field}>
+                    <input
+                      type={field === "quantity" || field === "unitPrice" || field === "amount" ? "number" : "text"}
+                      value={row[field] || ""}
+                      onChange={(e) => handleRowChange(index, field, e.target.value)}
+                      readOnly={!isEditing}
+                      className={cellInputClass}
+                    />
+                  </Td>
                 ))}
               </tr>
-            </thead>
-            <tbody>
-              {poData.rows?.map((row, index) => (
-                <tr key={row._id || index} className="even:bg-gray-50 hover:bg-indigo-50">
-                  {["hsnCode", "unitDescription","Description", "uom", "quantity", "unitPrice", "amount"].map((field) => (
-                    <td key={field} className="px-4 py-2">
-                      <input
-                        type={field === "quantity" || field === "unitPrice" || field === "amount" ? "number" : "text"}
-                        value={row[field] || ""}
-                        onChange={(e) => handleRowChange(index, field, e.target.value)}
-                        readOnly={!isEditing}
-                        className="w-full px-2 py-1 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-200"
-                      />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-  
+            ))}
+          </tbody>
+        </TableWrap>
+
         {isEditing && (
-          <div className="mt-4">
-            <button
-              onClick={handleAddProduct}
-              className="px-6 py-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition duration-300"
-            >
-              ➕ Add Product
-            </button>
-          </div>
+          <SecondaryButton onClick={handleAddProduct}>
+            <Plus size={16} />
+            Add Product
+          </SecondaryButton>
         )}
       </div>
-  
+
       {/* Totals and Metadata */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-        {[
-          { label: "Payable Amount", name: "payableAmount" },
-          { label: "GST Amount", name: "gstAmount" },
-          { label: "Total Amount", name: "totalAmount" },
-          { label: "GST (%)", name: "gst" },
-          { label: "PO Number", name: "poNumber" },
-          { label: "Delivery Terms", name: "deliveryTerms" },
-          { label: "Warranty Terms", name: "warrantyTerms" },
-          { label: "Payment Terms", name: "paymentTerms" },
-          { label: "LP", name: "LP" },
-          { label: "discount", name: "discount" },
-        ].map(({ label, name }) => (
-          <div key={name} className="flex flex-col">
-            <label className="text-lg font-medium text-gray-700 mb-2">{label}:</label>
-            <input
-              type="text"
-              name={name}
-              value={poData[name] || ""}
-              onChange={handleChange}
-              readOnly={!isEditing}
-              className="px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-200"
-            />
-          </div>
-        ))}
-      </div>
-  
+      <Card>
+        <h3 className="text-base font-semibold text-slate-900">Totals & Terms</h3>
+        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+          {[
+            { label: "Payable Amount", name: "payableAmount" },
+            { label: "GST Amount", name: "gstAmount" },
+            { label: "Total Amount", name: "totalAmount" },
+            { label: "GST (%)", name: "gst" },
+            { label: "PO Number", name: "poNumber" },
+            { label: "Delivery Terms", name: "deliveryTerms" },
+            { label: "Warranty Terms", name: "warrantyTerms" },
+            { label: "Payment Terms", name: "paymentTerms" },
+            { label: "LP", name: "LP" },
+            { label: "discount", name: "discount" },
+          ].map(({ label, name }) => (
+            <div key={name} className="flex flex-col">
+              <label className={labelClass}>{label}</label>
+              <input
+                type="text"
+                name={name}
+                value={poData[name] || ""}
+                onChange={handleChange}
+                readOnly={!isEditing}
+                className={inputClass}
+              />
+            </div>
+          ))}
+        </div>
+      </Card>
+
       {/* Save Button */}
       {isEditing && (
-        <div className="mt-8 flex justify-center">
-          <button
-            onClick={handleUpdate}
-            className="px-8 py-3 bg-teal-600 text-white font-semibold rounded-lg shadow-md hover:bg-teal-700 transition duration-300"
-          >
-            💾 Save New PO
-          </button>
+        <div className="flex justify-end">
+          <PrimaryButton onClick={handleUpdate}>
+            <Save size={16} />
+            Save New PO
+          </PrimaryButton>
         </div>
       )}
-    </div>
-  </div>
-  
-
+    </PageShell>
   );
 }

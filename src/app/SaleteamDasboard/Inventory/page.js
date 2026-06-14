@@ -2,9 +2,19 @@
 
 import axios from 'axios';
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Search, Plus, Save, Edit, Trash2, X } from 'lucide-react';
+import { Plus, Save, Edit, Trash2, X, FileText, ShoppingCart, Boxes } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { FileText } from 'lucide-react';
+import {
+  PageShell,
+  PageHeader,
+  Card,
+  SearchInput,
+  PrimaryButton,
+  SecondaryButton,
+  TableWrap,
+  Th,
+  Td,
+} from "../../_components/ui";
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
@@ -22,8 +32,8 @@ const ProductList = () => {
   const [editedProduct, setEditedProduct] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
-  const token = localStorage.getItem('admintokens');
-  const role = localStorage.getItem('role');
+  const token = typeof window !== "undefined" ? localStorage.getItem('admintokens') : null;
+  const role = typeof window !== "undefined" ? localStorage.getItem('role') : null;
 
   // Fetch products
   const fetchProducts = async () => {
@@ -45,7 +55,7 @@ const ProductList = () => {
     product.Brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     product.Itemcode?.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  
+
 
   const handleAddProduct = async (e) => {
     e.preventDefault();
@@ -156,20 +166,16 @@ const ProductList = () => {
 
   const handleBackClick = () => {
     const role = localStorage.getItem("role")?.trim().toLowerCase();
-    console.log("I got the role:", role);
-  
+
     if (role === "service engineer" || role === "engineer") {
-      console.log("Redirecting to ServiceProject dashboard");
       router.push("/ServiceProject/Dasboard");
     } else if (role === "md") {
-      console.log("Redirecting to MD dashboard");
       router.push("/admin/adminDasboard");
     } else {
-      console.log("Redirecting to SalesTeam dashboard");
       router.push("/SaleteamDasboard/Dasboard");
     }
   };
-  
+
 
   const toggleAddForm = () => {
     setShowAddForm(!showAddForm);
@@ -179,344 +185,191 @@ const ProductList = () => {
     setEditMode(null);
     setEditedProduct({});
   };
-  
-  const purchaseOrder = () => {
-    // Navigate to PurchaseOrder page with enquiryNo
-    router.push('/SaleteamDasboard/PurchaseOrder');
-   }
-  
-   const perfomaInvoice = () => {
-    router.push('/SaleteamDasboard/Perfomainvoice');
-   
-  
-   }
-  
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-teal-100 to-teal-300">
-      <div className="w-full max-w-7xl p-6">
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          {/* Header */}
-          <div className="flex justify-end gap-4 mt-4">
-  <button
-    onClick={() => purchaseOrder()}
-    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none transition duration-300 transform hover:scale-105"
-  >
-    Purchase Order
-  </button>
 
-  <button 
-    onClick={perfomaInvoice}
-    className="flex items-center gap-2 px-4 mr-2 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-md"
-  >
-    <FileText size={18} />
-    Perfoma Invoice
-  </button>
-</div>
-   
-                    
-                    
-          <div className="flex justify-between items-center p-6 border-b border-gray-100">
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={handleBackClick}
-                className="inline-flex items-center px-4 py-2 mb-6 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 mr-2"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                  </svg>
-                  Back
-                </button>
-              <h2 className="text-2xl font-semibold text-gray-800">Inventory Management</h2>
-            </div>
-            
-            {role === 'Stock Filler' && (
-              <button 
-                onClick={toggleAddForm}
-                className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
-              >
-                {showAddForm ? <X size={18} /> : <Plus size={18} />}
-                {showAddForm ? 'Cancel' : 'Add Product'}
-              </button>
-            )}
-          </div>
-          
-          {/* Add Product Form */}
-          {showAddForm && role === 'Stock Filler' && (
-            <div className="bg-teal-50 p-6 border-b border-gray-100">
-              <h3 className="text-lg font-medium text-gray-700 mb-4">Add New Product</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">Item Code</label>
-                  <input 
-                    className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500" 
-                    type="text" 
-                    name="Itemcode" 
-                    value={newProduct.Itemcode} 
-                    onChange={handleInputChange} 
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">Model</label>
-                  <input 
-                    className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500" 
-                    type="text" 
-                    name="Model" 
-                    value={newProduct.Model} 
-                    onChange={handleInputChange} 
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">Brand</label>
-                  <input 
-                    className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500" 
-                    type="text" 
-                    name="Brand" 
-                    value={newProduct.Brand} 
-                    onChange={handleInputChange} 
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">Price</label>
-                  <input 
-                    className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500" 
-                    type="number" 
-                    name="price" 
-                    value={newProduct.price} 
-                    onChange={handleInputChange} 
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">Inward</label>
-                  <input 
-                    className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500" 
-                    type="number" 
-                    name="Inward" 
-                    value={newProduct.Inward} 
-                    onChange={handleInputChange} 
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">Current</label>
-                  <input 
-                    className="w-full p-2 bg-gray-100 border border-gray-200 rounded-lg" 
-                    type="number" 
-                    name="Current" 
-                    value={newProduct.Current} 
-                    readOnly 
-                  />
-                </div>
-              </div>
-              <div className="mt-6 flex justify-end">
-                <button 
-                  className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
-                  onClick={handleAddProduct}
-                >
-                  Save Product
-                </button>
-              </div>
-            </div>
-          )}
-          
-          {/* Search Bar */}
-          <div className="p-6 border-b border-gray-100">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search size={18} className="text-gray-400" />
-              </div>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by Item Code, Model or Brand"
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-              />
-            </div>
-          </div>
-          
-          {/* Products Table */}
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-teal-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Code</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inward</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Outward</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current</th>
-                  {role === 'Stock Filler' && (
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  )}
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredProducts.length === 0 ? (
-                  <tr>
-                    <td colSpan={role === 'Stock Filler' ? 8 : 7} className="px-6 py-4 text-center text-gray-500">
-                      No products found
-                    </td>
-                  </tr>
-                ) : (
-                  filteredProducts.map((product) => (
-                    <tr key={product._id} className="hover:bg-teal-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {editMode === product._id ? (
-                          <input 
-                            className="w-full p-2 border border-gray-200 rounded-lg" 
-                            type="text" 
-                            name="Itemcode" 
-                            value={editedProduct.Itemcode || ''} 
-                            onChange={handleEditInputChange} 
-                          />
-                        ) : (
-                          <span className="text-sm text-gray-800">{product.Itemcode}</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {editMode === product._id ? (
-                          <input 
-                            className="w-full p-2 border border-gray-200 rounded-lg" 
-                            type="text" 
-                            name="Model" 
-                            value={editedProduct.Model || ''} 
-                            onChange={handleEditInputChange} 
-                          />
-                        ) : (
-                          <span className="text-sm text-gray-800">{product.Model}</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {editMode === product._id ? (
-                          <input 
-                            className="w-full p-2 border border-gray-200 rounded-lg" 
-                            type="text" 
-                            name="Brand" 
-                            value={editedProduct.Brand || ''} 
-                            onChange={handleEditInputChange} 
-                          />
-                        ) : (
-                          <span className="text-sm text-gray-800">{product.Brand}</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {editMode === product._id ? (
-                          <input 
-                            className="w-full p-2 border border-gray-200 rounded-lg" 
-                            type="number" 
-                            name="price" 
-                            value={editedProduct.price || ''} 
-                            onChange={handleEditInputChange} 
-                          />
-                        ) : (
-                          <span className="text-sm text-gray-800">{product.price}</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {editMode === product._id ? (
-                          <input 
-                            className="w-full p-2 border border-gray-200 rounded-lg" 
-                            type="number" 
-                            name="Inward" 
-                            value={editedProduct.Inward || ''} 
-                            onChange={handleEditInputChange} 
-                          />
-                        ) : (
-                          <span className="text-sm text-gray-800">{product.Inward}</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {editMode === product._id ? (
-                          <input 
-                            className="w-full p-2 border border-gray-200 rounded-lg" 
-                            type="number" 
-                            name="Outward" 
-                            value={editedProduct.Outward || ''} 
-                            onChange={handleEditInputChange} 
-                          />
-                        ) : (
-                          <span className="text-sm text-gray-800">{product.Outward}</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {editMode === product._id ? (
-                          <input 
-                            className="w-full p-2 border border-gray-200 rounded-lg" 
-                            type="number" 
-                            name="Current" 
-                            value={editedProduct.Current || ''} 
-                            onChange={handleEditInputChange} 
-                          />
-                        ) : (
-                          <span className="text-sm text-gray-800">{product.Current}</span>
-                        )}
-                      </td>
-                      {role === 'Stock Filler' && (
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex space-x-2">
-                            {editMode === product._id ? (
-                              <>
-                                <button 
-                                  className="p-1 rounded text-green-600 hover:bg-green-50"
-                                  onClick={() => handleSaveEdit(product._id)}
-                                  aria-label="Save changes"
-                                >
-                                  <Save size={18} />
-                                </button>
-                                <button 
-                                  className="p-1 rounded text-gray-600 hover:bg-gray-50"
-                                  onClick={cancelEdit}
-                                  aria-label="Cancel edit"
-                                >
-                                  <X size={18} />
-                                </button>
-                              </>
-                            ) : (
-                              <button 
-                                className="p-1 rounded text-teal-600 hover:bg-teal-50"
-                                onClick={() => handleEdit(product)}
-                                aria-label="Edit product"
-                              >
-                                <Edit size={18} />
-                              </button>
-                            )}
-                            {!editMode && (
-                              <button 
-                                className="p-1 rounded text-red-600 hover:bg-red-50"
-                                onClick={() => deleteProduct(product._id)}
-                                aria-label="Delete product"
-                              >
-                                <Trash2 size={18} />
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      )}
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-          
-          {/* Footer with status information */}
-          <div className="bg-teal-50 px-6 py-4 border-t border-gray-100">
-            <div className="flex justify-between items-center">
-              <p className="text-sm text-gray-500">
-                Showing {filteredProducts.length} of {products.length} products
-              </p>
-            </div>
-          </div>
+  const purchaseOrder = () => {
+    router.push('/SaleteamDasboard/PurchaseOrder');
+  }
+
+  const perfomaInvoice = () => {
+    router.push('/SaleteamDasboard/Perfomainvoice');
+  }
+
+  const editInputClass =
+    "w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100";
+  const formInputClass =
+    "w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100";
+
+  return (
+    <PageShell>
+      <PageHeader
+        eyebrow="Procurement"
+        title="Inventory Management"
+        subtitle="Track stock levels, manage products, and raise orders."
+        onBack={handleBackClick}
+        actions={
+          <>
+            <SecondaryButton onClick={purchaseOrder}>
+              <ShoppingCart size={16} />
+              Purchase Order
+            </SecondaryButton>
+            <PrimaryButton onClick={perfomaInvoice}>
+              <FileText size={16} />
+              Proforma Invoice
+            </PrimaryButton>
+          </>
+        }
+      />
+
+      {/* Add Product Form */}
+      {role === 'Stock Filler' && (
+        <div className="flex justify-end">
+          <SecondaryButton onClick={toggleAddForm}>
+            {showAddForm ? <X size={16} /> : <Plus size={16} />}
+            {showAddForm ? 'Cancel' : 'Add Product'}
+          </SecondaryButton>
         </div>
-      </div>
-    </div>
+      )}
+
+      {showAddForm && role === 'Stock Filler' && (
+        <Card>
+          <h3 className="text-base font-semibold text-slate-900">Add New Product</h3>
+          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Item Code</label>
+              <input className={formInputClass} type="text" name="Itemcode" value={newProduct.Itemcode} onChange={handleInputChange} />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Model</label>
+              <input className={formInputClass} type="text" name="Model" value={newProduct.Model} onChange={handleInputChange} />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Brand</label>
+              <input className={formInputClass} type="text" name="Brand" value={newProduct.Brand} onChange={handleInputChange} />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Price</label>
+              <input className={formInputClass} type="number" name="price" value={newProduct.price} onChange={handleInputChange} />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Inward</label>
+              <input className={formInputClass} type="number" name="Inward" value={newProduct.Inward} onChange={handleInputChange} />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Current</label>
+              <input className={`${formInputClass} bg-slate-100`} type="number" name="Current" value={newProduct.Current} readOnly />
+            </div>
+          </div>
+          <div className="mt-6 flex justify-end">
+            <PrimaryButton onClick={handleAddProduct}>
+              <Save size={16} />
+              Save Product
+            </PrimaryButton>
+          </div>
+        </Card>
+      )}
+
+      {/* Search Bar */}
+      <SearchInput
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        placeholder="Search by item code, model or brand…"
+        className="max-w-md"
+      />
+
+      {/* Products Table */}
+      <TableWrap>
+        <thead>
+          <tr>
+            <Th>Item Code</Th>
+            <Th>Model</Th>
+            <Th>Brand</Th>
+            <Th>Price</Th>
+            <Th>Inward</Th>
+            <Th>Outward</Th>
+            <Th>Current</Th>
+            {role === 'Stock Filler' && <Th>Actions</Th>}
+          </tr>
+        </thead>
+        <tbody>
+          {filteredProducts.length === 0 ? (
+            <tr>
+              <Td className="text-center text-slate-500" colSpan={role === 'Stock Filler' ? 8 : 7}>
+                No products found
+              </Td>
+            </tr>
+          ) : (
+            filteredProducts.map((product) => (
+              <tr key={product._id} className="hover:bg-slate-50">
+                <Td className="font-medium text-slate-900">
+                  {editMode === product._id ? (
+                    <input className={editInputClass} type="text" name="Itemcode" value={editedProduct.Itemcode || ''} onChange={handleEditInputChange} />
+                  ) : (product.Itemcode)}
+                </Td>
+                <Td>
+                  {editMode === product._id ? (
+                    <input className={editInputClass} type="text" name="Model" value={editedProduct.Model || ''} onChange={handleEditInputChange} />
+                  ) : (product.Model)}
+                </Td>
+                <Td>
+                  {editMode === product._id ? (
+                    <input className={editInputClass} type="text" name="Brand" value={editedProduct.Brand || ''} onChange={handleEditInputChange} />
+                  ) : (product.Brand)}
+                </Td>
+                <Td>
+                  {editMode === product._id ? (
+                    <input className={editInputClass} type="number" name="price" value={editedProduct.price || ''} onChange={handleEditInputChange} />
+                  ) : (product.price)}
+                </Td>
+                <Td>
+                  {editMode === product._id ? (
+                    <input className={editInputClass} type="number" name="Inward" value={editedProduct.Inward || ''} onChange={handleEditInputChange} />
+                  ) : (product.Inward)}
+                </Td>
+                <Td>
+                  {editMode === product._id ? (
+                    <input className={editInputClass} type="number" name="Outward" value={editedProduct.Outward || ''} onChange={handleEditInputChange} />
+                  ) : (product.Outward)}
+                </Td>
+                <Td>
+                  {editMode === product._id ? (
+                    <input className={editInputClass} type="number" name="Current" value={editedProduct.Current || ''} onChange={handleEditInputChange} />
+                  ) : (product.Current)}
+                </Td>
+                {role === 'Stock Filler' && (
+                  <Td>
+                    <div className="flex gap-1">
+                      {editMode === product._id ? (
+                        <>
+                          <button className="rounded p-1.5 text-emerald-600 hover:bg-emerald-50" onClick={() => handleSaveEdit(product._id)} aria-label="Save changes">
+                            <Save size={16} />
+                          </button>
+                          <button className="rounded p-1.5 text-slate-600 hover:bg-slate-100" onClick={cancelEdit} aria-label="Cancel edit">
+                            <X size={16} />
+                          </button>
+                        </>
+                      ) : (
+                        <button className="rounded p-1.5 text-blue-600 hover:bg-blue-50" onClick={() => handleEdit(product)} aria-label="Edit product">
+                          <Edit size={16} />
+                        </button>
+                      )}
+                      {!editMode && (
+                        <button className="rounded p-1.5 text-rose-600 hover:bg-rose-50" onClick={() => deleteProduct(product._id)} aria-label="Delete product">
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  </Td>
+                )}
+              </tr>
+            ))
+          )}
+        </tbody>
+      </TableWrap>
+
+      <p className="text-sm text-slate-500">
+        Showing {filteredProducts.length} of {products.length} products
+      </p>
+    </PageShell>
   );
 };
 

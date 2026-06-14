@@ -2,177 +2,247 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import { Fragment } from "react";
+import { FileText, Eye } from "lucide-react";
+import {
+  PageShell,
+  PageHeader,
+  Card,
+  SearchInput,
+  SecondaryButton,
+  TableWrap,
+  Th,
+  Td,
+  Badge,
+  LoadingBlock,
+  ErrorBanner,
+  EmptyState,
+} from "../../_components/ui";
+
+const statusTone = (status) => {
+  const s = (status || "").toLowerCase();
+  if (s.includes("access")) return "green";
+  if (s.includes("req")) return "amber";
+  if (s.includes("edit")) return "violet";
+  return "blue";
+};
 
 const Quotations = () => {
-    const [quotations, setQuotations] = useState([]);
-    const router = useRouter();
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [visibleProducts, setVisibleProducts] = useState({});
-    const Eid = localStorage.getItem('idstore');
-  
-    useEffect(() => {
-      const fetchQuotations = async () => {
-        try {
-          const token = localStorage.getItem("admintokens");
-  
-          const response = await axios.get(`http://localhost:5005/api/GetEidquotation/${Eid}`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-  
-          setQuotations(response.data.data);
-        } catch (error) {
-          setError(error.response?.data?.message || error.message);
-        } finally {
-          setLoading(false);
-        }
-      };
-  
-      fetchQuotations();
-    }, []);
-  
-    const toggleViewMore = (quotationId) => {
-      setVisibleProducts((prevState) => ({
-        ...prevState,
-        [quotationId]: !prevState[quotationId],
-      }));
+  const [quotations, setQuotations] = useState([]);
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [search, setSearch] = useState("");
+  const Eid = typeof window !== "undefined" ? localStorage.getItem("idstore") : null;
+
+  useEffect(() => {
+    const fetchQuotations = async () => {
+      try {
+        const token = localStorage.getItem("admintokens");
+        const response = await axios.get(`http://localhost:5005/api/GetEidquotation/${Eid}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setQuotations(response.data.data || []);
+      } catch (error) {
+        setError(error.response?.data?.message || error.message);
+      } finally {
+        setLoading(false);
+      }
     };
-  
-    const handleBackClick = () => {
-      router.push("/SaleteamDasboard/Dasboard");
-    };
-  
-    if (loading) return <div className="text-center text-xl text-gray-600">Loading...</div>;
-    if (error) return <div className="text-center text-xl text-red-500">Error: {error}</div>;
-  
+
+    fetchQuotations();
+  }, []);
+
+  const handleBackClick = () => {
+    router.push("/SaleteamDasboard/Dasboard");
+  };
+
+  const filtered = quotations.filter((q) => {
+    const term = search.toLowerCase();
     return (
-      <div className="container mx-auto p-6">
-        <button
-          onClick={handleBackClick}
-          className="inline-flex items-center px-4 py-2 mb-6 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5 mr-2"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          Back
-        </button>
-  
-        <h1 className="text-3xl font-semibold text-gray-800 mb-6">Latest Quotations</h1>
-  
-        <div className="overflow-x-auto bg-white shadow-lg rounded-lg">
-          <table className="table-auto w-full border-collapse text-sm text-gray-700">
-            <thead className="bg-indigo-600 text-white">
+      (q.ReferenceNumber || "").toLowerCase().includes(term) ||
+      (q.EnquiryNo || "").toLowerCase().includes(term) ||
+      (q.Status || "").toLowerCase().includes(term)
+    );
+  });
+
+  return (
+    <PageShell>
+      <PageHeader
+        eyebrow="Sales"
+        title="Quotations"
+        subtitle="All quotations you have created. Open one to view the full details."
+        onBack={handleBackClick}
+      />
+
+      {error && <ErrorBanner>{error}</ErrorBanner>}
+
+      {loading ? (
+        <LoadingBlock label="Loading quotations…" />
+      ) : selected ? (
+        <QuotationDetail quotation={selected} onBack={() => setSelected(null)} />
+      ) : quotations.length === 0 ? (
+        <EmptyState title="No quotations yet" subtitle="Quotations you create will appear here." />
+      ) : (
+        <>
+          <SearchInput
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by reference, enquiry or status…"
+            className="max-w-md"
+          />
+
+          <TableWrap>
+            <thead>
               <tr>
-                <th className="border px-4 py-2">Enquiry No</th>
-                <th className="border px-4 py-2">Reference No</th>
-                <th className="border px-4 py-2">Status</th>
-                <th className="border px-4 py-2">Total Payable Amount</th>
-                <th className="border px-4 py-2">Payment Due</th>
-                <th className="border px-4 py-2">Validity</th>
-                <th className="border px-4 py-2">Warranty</th>
-                <th className="border px-4 py-2">Delivery</th>
-                <th className="border px-4 py-2">Discount</th>
-                <th className="border px-4 py-2">GST</th>
-                <th className="border px-4 py-2">LP</th> 
-                <th className="border px-4 py-2">discount</th>
-                <th className="border px-4 py-2">Products</th>
+                <Th>Reference No</Th>
+                <Th>Enquiry No</Th>
+                <Th>Status</Th>
+                <Th>Items</Th>
+                <Th>Payable Amount</Th>
+                <Th>Date</Th>
+                <Th>Actions</Th>
               </tr>
             </thead>
             <tbody>
-              {quotations.map((quotation, index) => (
-                <Fragment key={quotation._id}>
-                  {/* Main quotation row */}
-                  <tr
-                    className={`${
-                      index % 2 === 0 ? "bg-gray-50" : "bg-gray-100"
-                    } hover:bg-indigo-100 transition-colors`}
-                  >
-                    <td className="border px-4 py-2">{quotation.EnquiryNo}</td>
-                    <td className="border px-4 py-2">{quotation.ReferenceNumber}</td>
-                    <td className="border px-4 py-2">{quotation.Status}</td>
-                    <td className="border px-4 py-2">{quotation.PayableAmount}</td>
-                    <td className="border px-4 py-2">{quotation.Paymentdue} days</td>
-                    <td className="border px-4 py-2">{quotation.validity}</td>
-                    <td className="border px-4 py-2">{quotation.Warranty}</td>
-                    <td className="border px-4 py-2">{quotation.Delivery}</td>
-                    <td className="border px-4 py-2">{quotation.Discount}</td>
-                    <td className="border px-4 py-2">{quotation.Gst}%</td>
-                    <td className="border px-4 py-2">{quotation.LP}</td>
-                    <td className="border px-4 py-2">{quotation.discount}</td>
-                    <td className="border px-4 py-2">
-                      <ul className="space-y-1">
-                        {/* Show only the first product */}
-                        {quotation.products.slice(0, 1).map((product, i) => (
-                          <ul key={product._id} className="text-sm">
-                            <h6 className="text-violet-900"><b>Product1</b></h6>
-                           <li> <strong>Description:</strong> {product.Description}</li>
-                                <li><strong>HSN Code:</strong> {product.HSNCode}</li>
-                                <li><strong>Unit Description:</strong> {product.UnitDescription}</li>
-                                <li><strong>UOM:</strong> {product.UOM}</li>
-                                <li><strong>Quantity:</strong> {product.Quantity}</li>
-                                <li><strong>Unit Price:</strong> {product.UnitPrice}</li>
-                                <li><strong>Total:</strong> {product.Total}</li>
-                                </ul>
-                        ))}
-                        {/* Show "View More" if more products */}
-                        {quotation.products.length > 1 && (
-                          <button
-                            className="text-indigo-600 mt-1"
-                            onClick={() => toggleViewMore(quotation._id)}
-                          >
-                            {visibleProducts[quotation._id] ? "View Less" : "View More"}
-                          </button>
-                        )}
-                      </ul>
-                    </td>
-                  </tr>
-  
-                  {/* Expanded products row (separate) */}
-                  {visibleProducts[quotation._id] && (
-                    <tr className="bg-white">
-                      <td colSpan={11} className="border px-6 py-4">
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                          {quotation.products.slice(1).map((product, idx) => (
-                            <div
-                              key={product._id}
-                              className="p-4 border rounded-md shadow-sm bg-gray-50"
-                            >
-                              <h4 className="font-semibold text-indigo-700 mb-2">
-                                Product {idx + 2}
-                              </h4>
-                              <ul className="text-sm text-gray-700 space-y-1">
-                                <li><strong>Description:</strong> {product.Description}</li>
-                                <li><strong>HSN Code:</strong> {product.HSNCode}</li>
-                                <li><strong>Unit Description:</strong> {product.UnitDescription}</li>
-                                <li><strong>UOM:</strong> {product.UOM}</li>
-                                <li><strong>Quantity:</strong> {product.Quantity}</li>
-                                <li><strong>Unit Price:</strong> {product.UnitPrice}</li>
-                                <li><strong>Total:</strong> {product.Total}</li>
-                              </ul>
-                            </div>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
+              {filtered.map((q) => (
+                <tr key={q._id} className="hover:bg-slate-50">
+                  <Td className="font-medium text-slate-900">{q.ReferenceNumber || "—"}</Td>
+                  <Td>{q.EnquiryNo || "—"}</Td>
+                  <Td>
+                    <Badge tone={statusTone(q.Status)}>{q.Status}</Badge>
+                  </Td>
+                  <Td>{q.products?.length || 0}</Td>
+                  <Td className="font-semibold text-slate-900">
+                    ₹{Number(q.PayableAmount || 0).toLocaleString("en-IN")}
+                  </Td>
+                  <Td>{q.createdAt ? new Date(q.createdAt).toLocaleDateString("en-GB") : "—"}</Td>
+                  <Td>
+                    <button
+                      onClick={() => setSelected(q)}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-blue-700 shadow-sm transition-colors hover:bg-blue-50"
+                    >
+                      <Eye size={15} />
+                      View
+                    </button>
+                  </Td>
+                </tr>
               ))}
             </tbody>
-          </table>
+          </TableWrap>
+
+          {filtered.length === 0 && (
+            <EmptyState title="No matching quotations" subtitle="Try a different search term." />
+          )}
+        </>
+      )}
+    </PageShell>
+  );
+};
+
+/* ---------- Full quotation viewing page ---------- */
+
+function QuotationDetail({ quotation, onBack }) {
+  const meta = [
+    { label: "Enquiry No", value: quotation.EnquiryNo },
+    { label: "Reference No", value: quotation.ReferenceNumber },
+    { label: "Financial Year", value: quotation.financialYear },
+    { label: "Created", value: quotation.createdAt ? new Date(quotation.createdAt).toLocaleDateString("en-GB") : null },
+    { label: "Payment Due", value: quotation.Paymentdue ? `${quotation.Paymentdue} days` : null },
+    { label: "Validity", value: quotation.validity },
+    { label: "Warranty", value: quotation.Warranty },
+    { label: "Delivery", value: quotation.Delivery },
+    { label: "Discount", value: quotation.Discount },
+    { label: "GST", value: quotation.Gst ? `${quotation.Gst}%` : null },
+    { label: "Freight", value: quotation.Freight },
+    { label: "Additional Discount", value: quotation.discount },
+  ];
+
+  const products = quotation.products || [];
+
+  return (
+    <Card>
+      {/* Header */}
+      <div className="flex flex-col gap-3 border-b border-slate-100 pb-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <span className="rounded-lg bg-blue-50 p-2.5 text-blue-600">
+            <FileText size={20} />
+          </span>
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">{quotation.ReferenceNumber || "Quotation"}</h2>
+            <p className="text-sm text-slate-500">Enquiry {quotation.EnquiryNo || "—"}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <Badge tone={statusTone(quotation.Status)}>{quotation.Status}</Badge>
+          <SecondaryButton onClick={onBack}>Back to list</SecondaryButton>
         </div>
       </div>
-    );
-  };
-  
+
+      {/* Meta grid */}
+      <div className="grid gap-x-8 gap-y-4 py-6 sm:grid-cols-2 lg:grid-cols-3">
+        {meta.map(({ label, value }) => (
+          <div key={label}>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{label}</p>
+            <p className="mt-1 text-sm text-slate-800">{value || "—"}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Products */}
+      <h3 className="mb-3 text-sm font-semibold text-slate-900">Products ({products.length})</h3>
+      <TableWrap>
+        <thead>
+          <tr>
+            <Th>#</Th>
+            <Th>HSN Code</Th>
+            <Th>Description</Th>
+            <Th>Unit Description</Th>
+            <Th>UOM</Th>
+            <Th>Qty</Th>
+            <Th>Unit Price</Th>
+            <Th>LP</Th>
+            <Th>Total</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {products.map((p, i) => (
+            <tr key={p._id || i} className="hover:bg-slate-50">
+              <Td className="text-slate-500">{i + 1}</Td>
+              <Td className="font-medium text-slate-900">{p.HSNCode || "—"}</Td>
+              <Td>{p.Description || "—"}</Td>
+              <Td>{p.UnitDescription || "—"}</Td>
+              <Td>{p.UOM || "—"}</Td>
+              <Td>{p.Quantity || "—"}</Td>
+              <Td>₹{Number(p.UnitPrice || 0).toLocaleString("en-IN")}</Td>
+              <Td>{p.LP || "—"}</Td>
+              <Td className="font-medium text-slate-900">₹{Number(p.Total || 0).toLocaleString("en-IN")}</Td>
+            </tr>
+          ))}
+        </tbody>
+      </TableWrap>
+
+      {/* Totals */}
+      <div className="mt-6 flex justify-end">
+        <div className="w-full max-w-xs space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-slate-500">GST</span>
+            <span className="font-medium text-slate-700">{quotation.Gst ? `${quotation.Gst}%` : "—"}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-slate-500">Freight</span>
+            <span className="font-medium text-slate-700">₹{Number(quotation.Freight || 0).toLocaleString("en-IN")}</span>
+          </div>
+          <div className="flex items-center justify-between border-t border-slate-200 pt-2">
+            <span className="text-sm font-semibold text-slate-700">Total Payable</span>
+            <span className="text-lg font-bold text-blue-700">
+              ₹{Number(quotation.PayableAmount || 0).toLocaleString("en-IN")}
+            </span>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
 
 export default Quotations;

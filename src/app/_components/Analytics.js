@@ -142,6 +142,7 @@ export function BarChart({ data, color = "#6ee7b7", height = 200 }) {
 /* ---------- Line / area chart (SVG) ---------- */
 
 export function LineChart({ data, stroke = "#6366f1", fill = "rgba(99,102,241,0.15)", height = 200 }) {
+  const [hovered, setHovered] = useState(null);
   const width = 600;
   const padX = 8;
   const padY = 12;
@@ -157,6 +158,7 @@ export function LineChart({ data, stroke = "#6366f1", fill = "rgba(99,102,241,0.
   const area = points.length
     ? `${path} L${points[points.length - 1][0]},${height - padY} L${points[0][0]},${height - padY} Z`
     : "";
+  const hitWidth = Math.max(stepX || 24, 24);
 
   return (
     <div>
@@ -167,9 +169,60 @@ export function LineChart({ data, stroke = "#6366f1", fill = "rgba(99,102,241,0.
           <line x1={padX} y1={height - padY} x2={width - padX} y2={height - padY} stroke="#e2e8f0" strokeWidth="1" />
           {area && <path d={area} fill={fill} />}
           <path d={path} fill="none" stroke={stroke} strokeWidth="2" />
+
+          {/* Vertical guide for the hovered point */}
+          {hovered !== null && points[hovered] && (
+            <line
+              x1={points[hovered][0]}
+              y1={padY}
+              x2={points[hovered][0]}
+              y2={height - padY}
+              stroke="#cbd5e1"
+              strokeWidth="1"
+              strokeDasharray="3 3"
+            />
+          )}
+
           {points.map(([x, y], i) => (
-            <circle key={i} cx={x} cy={y} r="2.5" fill={stroke} />
+            <circle key={i} cx={x} cy={y} r={hovered === i ? 4.5 : 2.5} fill={stroke} stroke="#fff" strokeWidth={hovered === i ? 1.5 : 0} />
           ))}
+
+          {/* Invisible hit areas for easy hovering */}
+          {points.map(([x], i) => (
+            <rect
+              key={`hit-${i}`}
+              x={x - hitWidth / 2}
+              y={0}
+              width={hitWidth}
+              height={height}
+              fill="transparent"
+              style={{ cursor: "pointer" }}
+              onMouseEnter={() => setHovered(i)}
+              onMouseLeave={() => setHovered(null)}
+            />
+          ))}
+
+          {/* Tooltip showing the lead count for the hovered day */}
+          {hovered !== null && points[hovered] && (() => {
+            const [x, y] = points[hovered];
+            const count = data[hovered].value;
+            const boxW = 84;
+            const boxH = 36;
+            let tx = Math.max(2, Math.min(x - boxW / 2, width - boxW - 2));
+            let ty = y - boxH - 8;
+            if (ty < 2) ty = y + 10;
+            return (
+              <g pointerEvents="none">
+                <rect x={tx} y={ty} width={boxW} height={boxH} rx="6" fill="#0f172a" />
+                <text x={tx + boxW / 2} y={ty + 15} textAnchor="middle" fontSize="12" fontWeight="700" fill="#ffffff">
+                  {count} lead{count === 1 ? "" : "s"}
+                </text>
+                <text x={tx + boxW / 2} y={ty + 28} textAnchor="middle" fontSize="9.5" fill="#cbd5e1">
+                  {data[hovered].label}
+                </text>
+              </g>
+            );
+          })()}
         </svg>
       )}
       <div className="mt-1 flex justify-between text-[10px] text-slate-400">

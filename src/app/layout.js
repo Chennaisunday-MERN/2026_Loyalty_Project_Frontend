@@ -48,9 +48,7 @@ export default function RootLayout({ children }) {
               <div className="text-sm font-semibold tracking-tight text-slate-900">SK Sales</div>
               <div className="text-xs text-slate-500">CRM and operations workspace</div>
             </div>
-            <div className="rounded-md bg-red-600 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-red-700">
-              <Logout />
-            </div>
+            <Logout />
           </div>
         </header>
 

@@ -2,12 +2,21 @@
 
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { ChevronLeft, User, Mail, Building, Users, FileText, Badge, Activity, Package } from "lucide-react";
+import { Mail, Building, Users, FileText, Badge as BadgeIcon, Activity, Package } from "lucide-react";
 import { useRouter } from "next/navigation";
+import {
+  PageShell,
+  PageHeader,
+  Card,
+  Badge,
+  LoadingBlock,
+  ErrorBanner,
+  EmptyState,
+} from "../../_components/ui";
 
 const EmployeeDashboard = () => {
   const router = useRouter();
-  const Eid = localStorage.getItem("idstore");
+  const Eid = typeof window !== "undefined" ? localStorage.getItem("idstore") : null;
 
   const [userData, setUserData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -57,140 +66,112 @@ const EmployeeDashboard = () => {
   if (!Eid) return <p>No Eid found in localStorage</p>;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <button
-            onClick={handleBackClick}
-            className="inline-flex items-center px-4 py-2 mb-6 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-              Back
-            </button>
-          
-          <h1 className="text-3xl font-bold text-indigo-700">Employee Dashboard</h1>
-          
-          <div className="w-10"></div> {/* Empty div for flex spacing */}
-        </div>
+    <PageShell>
+      <PageHeader
+        eyebrow="Procurement"
+        title="Employee Dashboard"
+        subtitle="Customer accounts and their product requests."
+        onBack={handleBackClick}
+      />
 
-        {loading && (
-          <div className="flex justify-center p-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      {loading && <LoadingBlock label="Loading user data…" />}
+
+      {error && <ErrorBanner>{error}</ErrorBanner>}
+
+      {userData.length > 0 && userData.map((user, index) => (
+        <Card key={index} padded={false} className="overflow-hidden">
+          {/* User Header */}
+          <div className="border-b border-slate-100 bg-slate-50 p-6">
+            <h2 className="text-xl font-semibold text-slate-900">{user.name}</h2>
+            <p className="text-sm text-slate-500">{user.Eid} • {user.companyName}</p>
           </div>
-        )}
-        
-        {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-center">
-            {error}
-          </div>
-        )}
 
-        {userData.length > 0 && userData.map((user, index) => (
-          <div key={index} className="mb-10 bg-white rounded-xl shadow-xl overflow-hidden">
-            {/* User Header */}
-            <div className="bg-indigo-600 p-6 text-white">
-              <h2 className="text-2xl font-bold">{user.name}</h2>
-              <p className="text-indigo-100">{user.Eid} • {user.companyName}</p>
-            </div>
-
-            {/* User Details Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
-              <div className="flex items-start space-x-3 bg-gray-50 p-4 rounded-lg">
-                <Mail className="text-indigo-500" size={20} />
-                <div>
-                  <p className="text-sm text-gray-500 font-medium">Email</p>
-                  <p className="text-gray-800">{user.email}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start space-x-3 bg-gray-50 p-4 rounded-lg">
-                <Building className="text-indigo-500" size={20} />
-                <div>
-                  <p className="text-sm text-gray-500 font-medium">Company</p>
-                  <p className="text-gray-800">{user.companyName}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start space-x-3 bg-gray-50 p-4 rounded-lg">
-                <Users className="text-indigo-500" size={20} />
-                <div>
-                  <p className="text-sm text-gray-500 font-medium">Contact Person</p>
-                  <p className="text-gray-800">{user.contactpersonname}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start space-x-3 bg-gray-50 p-4 rounded-lg">
-                <FileText className="text-indigo-500" size={20} />
-                <div>
-                  <p className="text-sm text-gray-500 font-medium">Description</p>
-                  <p className="text-gray-800">{user.Description}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start space-x-3 bg-gray-50 p-4 rounded-lg">
-                <Badge className="text-indigo-500" size={20} />
-                <div>
-                  <p className="text-sm text-gray-500 font-medium">Employee ID</p>
-                  <p className="text-gray-800">{user.Employeeid}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start space-x-3 bg-gray-50 p-4 rounded-lg">
-                <Activity className="text-indigo-500" size={20} />
-                <div>
-                  <p className="text-sm text-gray-500 font-medium">Status</p>
-                  <p className={`font-medium ${user.Status === 'Active' ? 'text-green-600' : 'text-red-600'}`}>
-                    {user.Status}
-                  </p>
-                </div>
+          {/* User Details Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
+            <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-4">
+              <Mail className="text-blue-500" size={20} />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Email</p>
+                <p className="text-sm text-slate-800">{user.email}</p>
               </div>
             </div>
 
-            {/* Product Details */}
-            <div className="p-6 bg-gray-50 border-t border-gray-100">
-              <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                <Package className="mr-2 text-indigo-500" size={20} />
-                Product Details
-              </h3>
-              
-              {Array.isArray(user.productDetails) && user.productDetails.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {user.productDetails.map((item, i) => (
-                    <div
-                      key={i}
-                      className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
-                    >
-                      <p className="font-medium text-indigo-700">{item.productname}</p>
-                      <div className="flex justify-between items-center mt-2">
-                        <span className="text-gray-500">Quantity</span>
-                        <span className="font-medium text-gray-800">{item.quantity}</span>
-                      </div>
+            <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-4">
+              <Building className="text-blue-500" size={20} />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Company</p>
+                <p className="text-sm text-slate-800">{user.companyName}</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-4">
+              <Users className="text-blue-500" size={20} />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Contact Person</p>
+                <p className="text-sm text-slate-800">{user.contactpersonname}</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-4">
+              <FileText className="text-blue-500" size={20} />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Description</p>
+                <p className="text-sm text-slate-800">{user.Description}</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-4">
+              <BadgeIcon className="text-blue-500" size={20} />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Employee ID</p>
+                <p className="text-sm text-slate-800">{user.Employeeid}</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-4">
+              <Activity className="text-blue-500" size={20} />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Status</p>
+                <Badge tone={user.Status === 'Active' ? 'green' : 'red'}>
+                  {user.Status}
+                </Badge>
+              </div>
+            </div>
+          </div>
+
+          {/* Product Details */}
+          <div className="border-t border-slate-100 bg-slate-50 p-6">
+            <h3 className="mb-4 flex items-center text-base font-semibold text-slate-900">
+              <Package className="mr-2 text-blue-500" size={20} />
+              Product Details
+            </h3>
+
+            {Array.isArray(user.productDetails) && user.productDetails.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {user.productDetails.map((item, i) => (
+                  <div
+                    key={i}
+                    className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+                  >
+                    <p className="font-medium text-slate-900">{item.productname}</p>
+                    <div className="mt-2 flex items-center justify-between">
+                      <span className="text-sm text-slate-500">Quantity</span>
+                      <span className="text-sm font-medium text-slate-800">{item.quantity}</span>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500 italic">No product details available</p>
-              )}
-            </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm italic text-slate-500">No product details available</p>
+            )}
           </div>
-        ))}
-        
-        {userData.length === 0 && !loading && !error && (
-          <div className="text-center p-8 bg-white rounded-lg shadow">
-            <p className="text-gray-600">No user data to display</p>
-          </div>
-        )}
-      </div>
-    </div>
+        </Card>
+      ))}
+
+      {userData.length === 0 && !loading && !error && (
+        <EmptyState title="No user data to display" subtitle="Employee data will appear here." />
+      )}
+    </PageShell>
   );
 };
 

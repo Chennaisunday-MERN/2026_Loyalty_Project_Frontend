@@ -4,7 +4,8 @@ import { PDFDocument, rgb } from "pdf-lib";
 import axios from "axios";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { Download } from "lucide-react";
+import { PageShell, PageHeader, Card, PrimaryButton, LoadingBlock, ErrorBanner } from "../../_components/ui";
 
 const Getpdf = () => {
   const [formData, setFormData] = useState([]);
@@ -14,8 +15,8 @@ const Getpdf = () => {
   const searchParams = useSearchParams();
   const enqid = searchParams.get("EnquiryNo");
   const router = useRouter();
-  const token = localStorage.getItem("admintokens");
-  const Eid = localStorage.getItem("Eid"); // Assuming Eid is stored in localStorage
+  const token = typeof window !== "undefined" ? localStorage.getItem("admintokens") : null;
+  const Eid = typeof window !== "undefined" ? localStorage.getItem("Eid") : null; // Assuming Eid is stored in localStorage
 
   useEffect(() => {
     const fetchData = async () => {
@@ -166,43 +167,27 @@ const Getpdf = () => {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen p-8">
-      <div className="max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-6">
-        <button
-          onClick={() => router.push("/SaleteamDasboard/Dasboard")}
-          className="inline-flex items-center px-4 py-2 mb-6 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-            Back
-          </button>
+    <PageShell>
+      <PageHeader
+        eyebrow="Sales"
+        title="Quotation Form"
+        subtitle="Generate and download the quotation PDF."
+        onBack={() => router.push("/SaleteamDasboard/Dasboard")}
+      />
 
-        <h2 className="text-3xl font-semibold text-center text-green-600 mb-6">Quotation Form</h2>
-
+      <Card>
         {loading ? (
-          <p>Loading data...</p>
+          <LoadingBlock label="Loading data…" />
         ) : error ? (
-          <p className="text-red-500">{error}</p>
+          <ErrorBanner>{error}</ErrorBanner>
         ) : (
-          <div>
-            <button
-              onClick={handleConvertToPDF}
-              className="px-6 py-2 mt-6 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-300"
-            >
-              Generate PDF
-            </button>
-          </div>
+          <PrimaryButton onClick={handleConvertToPDF}>
+            <Download size={16} />
+            Generate PDF
+          </PrimaryButton>
         )}
-      </div>
-    </div>
+      </Card>
+    </PageShell>
   );
 };
 

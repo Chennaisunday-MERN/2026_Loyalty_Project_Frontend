@@ -2,17 +2,25 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useRouter } from 'next/navigation';
+import {
+  PageShell,
+  PageHeader,
+  TableWrap,
+  Th,
+  Td,
+  ErrorBanner,
+} from "../../_components/ui";
 
 const ViewleadEnquiryPage = () => {
   const [enquiryData, setEnquiryData] = useState([]);
   const [error, setError] = useState(null);
-  const token = localStorage.getItem("admintokens");
-  const role = localStorage.getItem("role");
+  const token = typeof window !== "undefined" ? localStorage.getItem("admintokens") : null;
+  const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
   const router = useRouter();
 
   useEffect(() => {
     if (!token || !role) {
-      router.push("/login"); 
+      router.push("/login");
     }
   }, [token, role, router]);
 
@@ -28,7 +36,7 @@ const ViewleadEnquiryPage = () => {
       if (response.data && response.data.length > 0) {
         setEnquiryData(response.data);
       }
-      
+
     } catch (err) {
       console.error('Error fetching lead enquiry data:', err);
       setError("Failed to fetch lead enquiries data.");
@@ -44,68 +52,68 @@ const ViewleadEnquiryPage = () => {
   }, [role, token]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-green-100 to-green-300">
-      <div className="w-full max-w-4xl p-8 space-y-6 bg-white rounded-xl shadow-2xl">
-        <h1 className="text-4xl font-bold text-center text-green-600">Lead Enquiry</h1>
+    <PageShell>
+      <PageHeader
+        eyebrow="Leads"
+        title="Lead Enquiry"
+        subtitle="Lead enquiries received today."
+      />
 
-        {error && <p className="text-center text-red-600">{error}</p>} 
+      {error && <ErrorBanner>{error}</ErrorBanner>}
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full table-auto">
-            <thead>
-              <tr className="bg-green-100">
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Company Name</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Contact Person</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Department</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Lead Medium</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Lead Priority</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Enquiry Type</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Lead Condition</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Contact Number</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Alternate Phone</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Primary Mail</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Secondary Mail</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Address</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Country</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">City</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Postal Code</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">State</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Remarks</th>
+      <TableWrap>
+        <thead>
+          <tr>
+            <Th>Company Name</Th>
+            <Th>Contact Person</Th>
+            <Th>Department</Th>
+            <Th>Lead Medium</Th>
+            <Th>Lead Priority</Th>
+            <Th>Enquiry Type</Th>
+            <Th>Lead Condition</Th>
+            <Th>Contact Number</Th>
+            <Th>Alternate Phone</Th>
+            <Th>Primary Mail</Th>
+            <Th>Secondary Mail</Th>
+            <Th>Address</Th>
+            <Th>Country</Th>
+            <Th>City</Th>
+            <Th>Postal Code</Th>
+            <Th>State</Th>
+            <Th>Remarks</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {enquiryData.length > 0 ? (
+            enquiryData.map((data) => (
+              <tr key={data._id} className="hover:bg-slate-50">
+                <Td className="font-medium text-slate-900">{data?.LeadDetails?.companyName || "N/A"}</Td>
+                <Td>{data?.LeadDetails?.clientName || "N/A"}</Td>
+                <Td>{data?.LeadDetails?.Department || "N/A"}</Td>
+                <Td>{data?.LeadDetails?.LeadMedium || "N/A"}</Td>
+                <Td>{data?.LeadDetails?.LeadPriority || "N/A"}</Td>
+                <Td>{data?.LeadDetails?.EnquiryType || "N/A"}</Td>
+                <Td>{data?.LeadDetails?.Leadcondition || "N/A"}</Td>
+                <Td>{data?.ContactDetails?.MobileNumber || "N/A"}</Td>
+                <Td>{data?.ContactDetails?.AlternateMobileNumber || "N/A"}</Td>
+                <Td>{data?.ContactDetails?.PrimaryMail || "N/A"}</Td>
+                <Td>{data?.ContactDetails?.SecondaryMail || "N/A"}</Td>
+                <Td>{data?.AddressDetails?.Address || "N/A"}</Td>
+                <Td>{data?.AddressDetails?.Country || "N/A"}</Td>
+                <Td>{data?.AddressDetails?.City || "N/A"}</Td>
+                <Td>{data?.AddressDetails?.PostalCode || "N/A"}</Td>
+                <Td>{data?.AddressDetails?.State || "N/A"}</Td>
+                <Td>{data?.DescriptionDetails || "N/A"}</Td>
               </tr>
-            </thead>
-            <tbody>
-              {enquiryData.length > 0 ? (
-                enquiryData.map((data) => (
-                  <tr key={data._id} className="border-b hover:bg-green-50">
-                    <td className="px-4 py-2 text-sm text-gray-700">{data?.LeadDetails?.companyName || "N/A"}</td>
-                    <td className="px-4 py-2 text-sm text-gray-700">{data?.LeadDetails?.clientName || "N/A"}</td>
-                    <td className="px-4 py-2 text-sm text-gray-700">{data?.LeadDetails?.Department || "N/A"}</td>
-                    <td className="px-4 py-2 text-sm text-gray-700">{data?.LeadDetails?.LeadMedium || "N/A"}</td>
-                    <td className="px-4 py-2 text-sm text-gray-700">{data?.LeadDetails?.LeadPriority || "N/A"}</td>
-                    <td className="px-4 py-2 text-sm text-gray-700">{data?.LeadDetails?.EnquiryType || "N/A"}</td>
-                    <td className="px-4 py-2 text-sm text-gray-700">{data?.LeadDetails?.Leadcondition || "N/A"}</td>
-                    <td className="px-4 py-2 text-sm text-gray-700">{data?.ContactDetails?.MobileNumber || "N/A"}</td>
-                    <td className="px-4 py-2 text-sm text-gray-700">{data?.ContactDetails?.AlternateMobileNumber || "N/A"}</td>
-                    <td className="px-4 py-2 text-sm text-gray-700">{data?.ContactDetails?.PrimaryMail || "N/A"}</td>
-                    <td className="px-4 py-2 text-sm text-gray-700">{data?.ContactDetails?.SecondaryMail || "N/A"}</td>
-                    <td className="px-4 py-2 text-sm text-gray-700">{data?.AddressDetails?.Address || "N/A"}</td>
-                    <td className="px-4 py-2 text-sm text-gray-700">{data?.AddressDetails?.Country || "N/A"}</td>
-                    <td className="px-4 py-2 text-sm text-gray-700">{data?.AddressDetails?.City || "N/A"}</td>
-                    <td className="px-4 py-2 text-sm text-gray-700">{data?.AddressDetails?.PostalCode || "N/A"}</td>
-                    <td className="px-4 py-2 text-sm text-gray-700">{data?.AddressDetails?.State || "N/A"}</td>
-                    <td className="px-4 py-2 text-sm text-gray-700">{data?.DescriptionDetails || "N/A"}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="17" className="text-center text-gray-600">No enquiries available for today.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+            ))
+          ) : (
+            <tr>
+              <Td colSpan="17" className="text-center text-slate-500">No enquiries available for today.</Td>
+            </tr>
+          )}
+        </tbody>
+      </TableWrap>
+    </PageShell>
   );
 };
 

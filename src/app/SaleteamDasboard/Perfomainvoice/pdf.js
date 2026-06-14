@@ -85,7 +85,7 @@ const PDFPage = ({ rows, freight, gst, invoiceData, name, address, gstNumber }) 
     <div ref={contentRef} className="bg-gray-100 mx-3 min-h-screen">
          <button
           onClick={() => router.push('/SaleteamDasboard/Dasboard')}
-          className="inline-flex items-center px-4 py-2 mb-6 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
+          className="inline-flex items-center gap-1.5 mb-6 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-100"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -202,7 +202,7 @@ const PDFPage = ({ rows, freight, gst, invoiceData, name, address, gstNumber }) 
         <button
           ref={buttonRef}
           onClick={handleDownload}
-          className="px-6 py-3 bg-green-600 text-white rounded shadow hover:bg-green-700"
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
         >
           Download PDF
         </button>

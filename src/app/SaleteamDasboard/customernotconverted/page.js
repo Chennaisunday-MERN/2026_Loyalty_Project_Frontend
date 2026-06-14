@@ -3,7 +3,13 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import {
+  PageShell,
+  PageHeader,
+  Card,
+  PrimaryButton,
+  ErrorBanner,
+} from "../../_components/ui";
 
 const CustomerNotConverted = () => {
   const [leadNumber, setLeadNumber] = useState('');
@@ -84,64 +90,59 @@ const CustomerNotConverted = () => {
     router.push('/SaleteamDasboard/Dasboard');
   };
 
+  const inputClass =
+    "w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100";
+  const labelClass =
+    "mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500";
+
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-green-100 to-green-300">
-      <div className="w-full max-w-lg p-8 space-y-6 bg-white rounded-xl shadow-2xl">
-        
-        <button
-          onClick={handleBackClick}
-          className="inline-flex items-center px-4 py-2 mb-6 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
->
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="h-5 w-5 mr-2"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-  </svg>
-  Back
-</button>
-        
-        <h1 className="text-2xl font-bold text-center">Lead Form</h1>
+    <PageShell>
+      <PageHeader
+        eyebrow="Leads"
+        title="Lead Form"
+        subtitle="Mark a lead as not converted and record the reason."
+        onBack={handleBackClick}
+      />
+
+      <Card className="mx-auto max-w-lg">
+        {error && <ErrorBanner>{error}</ErrorBanner>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {submitted && <p className="text-green-500 text-center">Lead submitted successfully!</p>}
+          {submitted && (
+            <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              Lead submitted successfully!
+            </div>
+          )}
 
-          <div className="space-y-2">
-            <label htmlFor="leadNumber" className="font-medium text-gray-700">Lead Number</label>
+          <div>
+            <label htmlFor="leadNumber" className={labelClass}>Lead Number</label>
             <input
               type="text"
               id="leadNumber"
               value={leadNumber}
-              className="w-full p-2 border-2 border-red-200 rounded-lg"
+              className={`${inputClass} bg-slate-100`}
               readOnly
               required
             />
           </div>
 
-          <div className="space-y-2">
-            <label htmlFor="remarks" className="font-medium text-gray-700">Remarks</label>
+          <div>
+            <label htmlFor="remarks" className={labelClass}>Remarks</label>
             <textarea
               id="remarks"
               value={remarks}
               onChange={(e) => setRemarks(e.target.value)}
-              className="w-full p-2 border-2 border-red-200 rounded-lg"
+              className={inputClass}
               required
             />
           </div>
 
-          <button
-            type="submit"
-            className="w-full py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-          >
+          <PrimaryButton type="submit" className="w-full">
             Submit
-          </button>
+          </PrimaryButton>
         </form>
-      </div>
-    </div>
+      </Card>
+    </PageShell>
   );
 };
 

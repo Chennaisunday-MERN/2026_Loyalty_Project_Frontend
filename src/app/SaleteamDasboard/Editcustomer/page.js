@@ -1,8 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams,useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import axios from "axios";
+import { Save } from "lucide-react";
+import {
+  PageShell,
+  PageHeader,
+  Card,
+  PrimaryButton,
+  LoadingBlock,
+  EmptyState,
+} from "../../_components/ui";
 
 export default function EnquiryPage() {
   const searchParams = useSearchParams();
@@ -10,7 +19,7 @@ export default function EnquiryPage() {
   const [formData, setFormData] = useState(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  
+
   useEffect(() => {
     if (!EnquiryNo) return;
 
@@ -119,88 +128,103 @@ export default function EnquiryPage() {
     }
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (!formData) return <div>No data found</div>;
+  if (loading) return <PageShell><LoadingBlock label="Loading..." /></PageShell>;
+  if (!formData) return <PageShell><EmptyState title="No data found" /></PageShell>;
 
   const customer = formData.customerconvert?.[0] || {};
   const customerDetails = customer.CustomerDetails || {};
   const billing = customer.BillingAddressDetails || {};
   const address = formData.AddressDetails || {};
 
-  return (
-    <div className="p-6 bg-white shadow-lg rounded-xl max-w-3xl mx-auto mt-10">
-       <button
-        onClick={() => router.push('/SaleteamDasboard/CustomerConverted')}
-        className="inline-flex items-center px-4 py-2 mb-6 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5 mr-2"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
-        Back
-      </button>
-      <h1 className="text-2xl font-bold mb-4 text-green-600">
-        Edit Enquiry: {customer.EnquiryNo}
-      </h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
+  const labelClass = "mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500";
+  const inputClass =
+    "w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100";
 
+  return (
+    <PageShell>
+      <PageHeader
+        eyebrow="Sales"
+        title={`Edit Enquiry: ${customer.EnquiryNo || ""}`}
+        subtitle="Update converted customer enquiry details."
+        onBack={() => router.push('/SaleteamDasboard/CustomerConverted')}
+      />
+
+      <form onSubmit={handleSubmit} className="space-y-6">
         {/* Top-level fields */}
-        <div>
-          <label>Customer ID:</label>
-          <input type="text" value={formData.CustomerId} disabled className="border p-2 w-full" />
-        </div>
-        <div>
-          <label>PAN Number:</label>
-          <input type="text" name="PANnumber" value={formData.PANnumber || ""} onChange={handleTopLevelChange} className="border p-2 w-full" />
-        </div>
-        <div>
-          <label>GSTN Number:</label>
-          <input type="text" name="GSTNnumber" value={formData.GSTNnumber || ""} onChange={handleTopLevelChange} className="border p-2 w-full" />
-        </div>
-        <div>
-          <label>Company Name:</label>
-          <input type="text" name="companyName" value={formData.companyName || ""} onChange={handleTopLevelChange} className="border p-2 w-full" />
-        </div>
+        <Card>
+          <h3 className="text-base font-semibold text-slate-900">Enquiry</h3>
+          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label className={labelClass}>Customer ID</label>
+              <input type="text" value={formData.CustomerId} disabled className={`${inputClass} bg-slate-100`} />
+            </div>
+            <div>
+              <label className={labelClass}>PAN Number</label>
+              <input type="text" name="PANnumber" value={formData.PANnumber || ""} onChange={handleTopLevelChange} className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>GSTN Number</label>
+              <input type="text" name="GSTNnumber" value={formData.GSTNnumber || ""} onChange={handleTopLevelChange} className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>Company Name</label>
+              <input type="text" name="companyName" value={formData.companyName || ""} onChange={handleTopLevelChange} className={inputClass} />
+            </div>
+          </div>
+        </Card>
 
         {/* AddressDetails */}
-        <h3 className="text-lg font-semibold">Address Details</h3>
-        <input type="text" name="Address" placeholder="Address" value={address.Address || ""} onChange={handleAddressChange} className="border p-2 w-full" />
-        <input type="text" name="City" placeholder="City" value={address.City || ""} onChange={handleAddressChange} className="border p-2 w-full" />
-        <input type="text" name="Country" placeholder="Country" value={address.Country || ""} onChange={handleAddressChange} className="border p-2 w-full" />
-        <input type="text" name="PostalCode" placeholder="Postal Code" value={address.PostalCode || ""} onChange={handleAddressChange} className="border p-2 w-full" />
-        <input type="text" name="State" placeholder="State" value={address.State || ""} onChange={handleAddressChange} className="border p-2 w-full" />
+        <Card>
+          <h3 className="text-base font-semibold text-slate-900">Address Details</h3>
+          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <input type="text" name="Address" placeholder="Address" value={address.Address || ""} onChange={handleAddressChange} className={`${inputClass} md:col-span-2`} />
+            <input type="text" name="City" placeholder="City" value={address.City || ""} onChange={handleAddressChange} className={inputClass} />
+            <input type="text" name="Country" placeholder="Country" value={address.Country || ""} onChange={handleAddressChange} className={inputClass} />
+            <input type="text" name="PostalCode" placeholder="Postal Code" value={address.PostalCode || ""} onChange={handleAddressChange} className={inputClass} />
+            <input type="text" name="State" placeholder="State" value={address.State || ""} onChange={handleAddressChange} className={inputClass} />
+          </div>
+        </Card>
 
         {/* Customer Convert */}
-        <h3 className="text-lg font-semibold mt-4">Customer Convert Info</h3>
-        <input type="text" name="clientName" placeholder="Client Name" value={customer.clientName || ""} onChange={handleCustomerConvertChange} className="border p-2 w-full" />
-        <input type="text" name="DescriptionDetails" placeholder="Description" value={customer.DescriptionDetails || ""} onChange={handleCustomerConvertChange} className="border p-2 w-full" />
-        <input type="text" name="Convertedstatus" placeholder="Converted Status" value={customer.Convertedstatus || ""} onChange={handleCustomerConvertChange} className="border p-2 w-full" />
-        <input type="text" name="Status" placeholder="Status" value={customer.Status || ""} onChange={handleCustomerConvertChange} className="border p-2 w-full" />
+        <Card>
+          <h3 className="text-base font-semibold text-slate-900">Customer Convert Info</h3>
+          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <input type="text" name="clientName" placeholder="Client Name" value={customer.clientName || ""} onChange={handleCustomerConvertChange} className={inputClass} />
+            <input type="text" name="DescriptionDetails" placeholder="Description" value={customer.DescriptionDetails || ""} onChange={handleCustomerConvertChange} className={inputClass} />
+            <input type="text" name="Convertedstatus" placeholder="Converted Status" value={customer.Convertedstatus || ""} onChange={handleCustomerConvertChange} className={inputClass} />
+            <input type="text" name="Status" placeholder="Status" value={customer.Status || ""} onChange={handleCustomerConvertChange} className={inputClass} />
+          </div>
+        </Card>
 
         {/* Customer Details */}
-        <h3 className="text-lg font-semibold mt-4">Customer Contact Details</h3>
-        <input type="text" name="MobileNumber" placeholder="Mobile Number" value={customerDetails.MobileNumber || ""} onChange={handleCustomerDetailsChange} className="border p-2 w-full" />
-        <input type="text" name="PrimaryMail" placeholder="Email" value={customerDetails.PrimaryMail || ""} onChange={handleCustomerDetailsChange} className="border p-2 w-full" />
-        <input type="text" name="opportunitynumber" placeholder="Opportunity No" value={customerDetails.opportunitynumber || ""} onChange={handleCustomerDetailsChange} className="border p-2 w-full" />
+        <Card>
+          <h3 className="text-base font-semibold text-slate-900">Customer Contact Details</h3>
+          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <input type="text" name="MobileNumber" placeholder="Mobile Number" value={customerDetails.MobileNumber || ""} onChange={handleCustomerDetailsChange} className={inputClass} />
+            <input type="text" name="PrimaryMail" placeholder="Email" value={customerDetails.PrimaryMail || ""} onChange={handleCustomerDetailsChange} className={inputClass} />
+            <input type="text" name="opportunitynumber" placeholder="Opportunity No" value={customerDetails.opportunitynumber || ""} onChange={handleCustomerDetailsChange} className={inputClass} />
+          </div>
+        </Card>
 
         {/* Billing Details */}
-        <h3 className="text-lg font-semibold mt-4">Billing Address Details</h3>
-        <input type="text" name="BillingAddress" placeholder="Billing Address" value={billing.BillingAddress || ""} onChange={handleBillingAddressChange} className="border p-2 w-full" />
-        <input type="text" name="BillingCity" placeholder="Billing City" value={billing.BillingCity || ""} onChange={handleBillingAddressChange} className="border p-2 w-full" />
-        <input type="text" name="BillingCountry" placeholder="Billing Country" value={billing.BillingCountry || ""} onChange={handleBillingAddressChange} className="border p-2 w-full" />
-        <input type="text" name="BillingPostalCode" placeholder="Billing Postal Code" value={billing.BillingPostalCode || ""} onChange={handleBillingAddressChange} className="border p-2 w-full" />
-        <input type="text" name="BillingState" placeholder="Billing State" value={billing.BillingState || ""} onChange={handleBillingAddressChange} className="border p-2 w-full" />
+        <Card>
+          <h3 className="text-base font-semibold text-slate-900">Billing Address Details</h3>
+          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <input type="text" name="BillingAddress" placeholder="Billing Address" value={billing.BillingAddress || ""} onChange={handleBillingAddressChange} className={`${inputClass} md:col-span-2`} />
+            <input type="text" name="BillingCity" placeholder="Billing City" value={billing.BillingCity || ""} onChange={handleBillingAddressChange} className={inputClass} />
+            <input type="text" name="BillingCountry" placeholder="Billing Country" value={billing.BillingCountry || ""} onChange={handleBillingAddressChange} className={inputClass} />
+            <input type="text" name="BillingPostalCode" placeholder="Billing Postal Code" value={billing.BillingPostalCode || ""} onChange={handleBillingAddressChange} className={inputClass} />
+            <input type="text" name="BillingState" placeholder="Billing State" value={billing.BillingState || ""} onChange={handleBillingAddressChange} className={inputClass} />
+          </div>
+        </Card>
 
-        <button type="submit" className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">
-          Update
-        </button>
+        <div className="flex justify-end">
+          <PrimaryButton type="submit">
+            <Save size={16} />
+            Update
+          </PrimaryButton>
+        </div>
       </form>
-    </div>
+    </PageShell>
   );
 }

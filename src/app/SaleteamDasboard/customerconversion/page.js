@@ -3,13 +3,21 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft } from 'lucide-react';
+import { Save, Pencil, X } from 'lucide-react';
+import {
+  PageShell,
+  PageHeader,
+  Card,
+  PrimaryButton,
+  SecondaryButton,
+  ErrorBanner,
+} from "../../_components/ui";
 
 const CustomerConversion = () => {
   const token = localStorage.getItem('admintokens');
   const Eid = localStorage.getItem('idstore');
   const searchParams = useSearchParams();
-  
+
 const EnquiryNo = searchParams.get('EnquiryNo')
 console.log('Fetching EnquiryNo:', EnquiryNo);
 
@@ -36,7 +44,7 @@ console.log('Fetching EnquiryNo:', EnquiryNo);
   const [success, setSuccess] = useState(null);
   const [fetchData, setFetchData] = useState(null);
   const [arrayData,setArrayData] = useState({});
-  const [isEditing, setIsEditing] = useState(false);  
+  const [isEditing, setIsEditing] = useState(false);
   const [update,setUpdate] = useState(null);
   const [ updateId,setUpdateId] =useState(null);
   const router = useRouter();
@@ -123,10 +131,10 @@ const handlecustomerchange = (e)=>{
       setError(`Error fetching data: ${err.response ? err.response.data : err.message}`);
     }
   };
-  
+
   const updatedata = async (e) => {
     e.preventDefault();
-  
+
     const updatedCustomer = {
       DescriptionDetails: arrayData.DescriptionDetails,
       clientName: arrayData.clientName,
@@ -142,7 +150,7 @@ const handlecustomerchange = (e)=>{
       BillingPostalCode:arrayData.BillingAddressDetails.BillingPostalCode,
       BillingState:arrayData.BillingAddressDetails.BillingState
     };
-  
+
     try {
       const response = await axios.put(
         `http://localhost:5005/api/cc/getcustomerconverstion/${Eid}/${update}/${updateId}`,
@@ -154,7 +162,7 @@ const handlecustomerchange = (e)=>{
           }
         }
       );
-  
+
       console.log(response.data);
       alert("Customer data updated successfully!");
       router.push('/SaleteamDasboard/Dasboard');
@@ -163,8 +171,8 @@ const handlecustomerchange = (e)=>{
       alert("Failed to update customer data. Please try again.");
     }
   };
-  
-  
+
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -200,8 +208,8 @@ const handlecustomerchange = (e)=>{
       alert("Successfully updated");
 
       const EnquiryNo = customer.EnquiryNo;
-      if(EnquiryNo){ 
-        fetchDataFromAPI(EnquiryNo); 
+      if(EnquiryNo){
+        fetchDataFromAPI(EnquiryNo);
       } else {
         setError("No enquiry data found.");
       }
@@ -230,319 +238,349 @@ const handleBackClick = () => {
   router.push('/SaleteamDasboard/Dasboard')
 }
 
+  const labelClass = "mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500";
+  const inputClass =
+    "w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100";
+
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-100 to-blue-300">
-    <div className="w-full max-w-4xl p-8 space-y-6 bg-white rounded-xl shadow-2xl">
-      <button onClick={handleBackClick}
-       className="inline-flex items-center px-4 py-2 mb-6 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
-       >
-         <svg
-           xmlns="http://www.w3.org/2000/svg"
-           className="h-5 w-5 mr-2"
-           fill="none"
-           viewBox="0 0 24 24"
-           stroke="currentColor"
-           strokeWidth={2}
-         >
-           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-         </svg>
-         Back
-       </button>
-      <h1 className="text-3xl font-semibold text-center text-blue-600 mb-6">Customer Conversion Form</h1>
-      {error && <div className="text-red-600 text-center font-semibold">{error}</div>}
-    {success && <div className="text-green-600 text-center font-semibold">{success}</div>}
-      {!fetchData? (<form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label className="block text-lg font-medium text-gray-700">LEAD NUMBER:</label>
-          <input
-            type="text"
-            name="EnquiryNo"
-            value={customer.EnquiryNo}
-            onChange={handleChange}
-            required
-            className="w-full p-3 border border-gray-300 rounded-md"readOnly
-          />
+    <PageShell>
+      <PageHeader
+        eyebrow="Sales"
+        title="Customer Conversion"
+        subtitle="Convert a qualified lead into a customer record."
+        onBack={handleBackClick}
+      />
+
+      {error && <ErrorBanner>{error}</ErrorBanner>}
+      {success && (
+        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+          {success}
         </div>
-        
-        <div>
-          <label className="block text-lg font-medium text-gray-700">PAN Number:</label>
-          <input
-            type="text"
-            name="PANnumber"
-            value={customer.PANnumber}
-            onChange={handleChange}
-            required
-            className="w-full p-3 border border-gray-300 rounded-md"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-lg font-medium text-gray-700">Opportunity Number:</label>
-          <input
-            type="text"
-            name="CustomerDetails.opportunitynumber"
-            value={customer.CustomerDetails.opportunitynumber}
-            onChange={handleChange}
-            className="w-full p-3 border border-gray-300 rounded-md"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-lg font-medium text-gray-700">GSTN Number:</label>
-          <input
-            type="text"
-            name="GSTNnumber"
-            value={customer.GSTNnumber}
-            onChange={handleChange}
-            className="w-full p-3 border border-gray-300 rounded-md"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-lg font-medium text-gray-700">Billing Address:</label>
-          <input
-            type="text"
-            name="BillingAddressDetails.BillingAddress"
-            value={customer.BillingAddressDetails.BillingAddress}
-            onChange={handleChange}
-            className="w-full p-3 border border-gray-300 rounded-md"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-lg font-medium text-gray-700">Billing Country:</label>
-          <input
-            type="text"
-            name="BillingAddressDetails.BillingCountry"
-            value={customer.BillingAddressDetails.BillingCountry}
-            onChange={handleChange}
-            className="w-full p-3 border border-gray-300 rounded-md"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-lg font-medium text-gray-700">Billing City:</label>
-          <input
-            type="text"
-            name="BillingAddressDetails.BillingCity"
-            value={customer.BillingAddressDetails.BillingCity}
-            onChange={handleChange}
-            className="w-full p-3 border border-gray-300 rounded-md"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-lg font-medium text-gray-700">Billing Postal Code:</label>
-          <input
-            type="text"
-            name="BillingAddressDetails.BillingPostalCode"
-            value={customer.BillingAddressDetails.BillingPostalCode}
-            onChange={handleChange}
-            className="w-full p-3 border border-gray-300 rounded-md"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-lg font-medium text-gray-700">Billing State:</label>
-          <input
-            type="text"
-            name="BillingAddressDetails.BillingState"
-            value={customer.BillingAddressDetails.BillingState}
-            onChange={handleChange}
-            className="w-full p-3 border border-gray-300 rounded-md"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-lg font-medium text-gray-700">Description:</label>
-          <input
-            type="text"
-            name="DescriptionDetails"
-            value={customer.DescriptionDetails}
-            onChange={handleChange}
-            className="w-full p-3 border border-gray-300 rounded-md"
-          />
-        </div>
-        
-       
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
-        >
-          {loading ? 'Submitting...' : 'Submit'}
-        </button>
-      </form>): (
-      <div>
-        <h2 className="text-3xl font-semibold text-center text-blue-600 mb-6">Customer Details</h2>
-        <form onSubmit={updatedata} className="space-y-6">
-          
-           
-              
-                <label className="block text-lg font-medium text-gray-700">EnquiryNo</label>
+      )}
+
+      {!fetchData ? (
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <Card>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label className={labelClass}>Lead Number</label>
                 <input
-                    type="text"
-                    name="EnquiryNo"
-                    value={arrayData.EnquiryNo}
-                    onChange={handleFilechange}
-                    disabled={!isEditing}
-                    className="w-full p-3 border border-gray-300 rounded-md"
-                  />
-                <label className="block text-lg font-medium text-gray-700">CustomerId</label>
+                  type="text"
+                  name="EnquiryNo"
+                  value={customer.EnquiryNo}
+                  onChange={handleChange}
+                  required
+                  className={`${inputClass} bg-slate-100`}
+                  readOnly
+                />
+              </div>
+              <div>
+                <label className={labelClass}>PAN Number</label>
                 <input
-                    type="text"
-                    name="CustomerId"
-                    value={fetchData.CustomerId}
-                    onChange={handleFilechange}
-                    disabled={!isEditing}
-                    className="w-full p-3 border border-gray-300 rounded-md"
-                  />
-                <label className="block text-lg font-medium text-gray-700">Company Name</label>
+                  type="text"
+                  name="PANnumber"
+                  value={customer.PANnumber}
+                  onChange={handleChange}
+                  required
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Opportunity Number</label>
                 <input
-                    type="text"
-                    name="companyName"
-                    value={fetchData.companyName}
-                    onChange={handleFilechange}
-                    disabled={!isEditing}
-                    className="w-full p-3 border border-gray-300 rounded-md"
-                  />
-                <label className="block text-lg font-medium text-gray-700">Customer Address</label>
+                  type="text"
+                  name="CustomerDetails.opportunitynumber"
+                  value={customer.CustomerDetails.opportunitynumber}
+                  onChange={handleChange}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>GSTN Number</label>
                 <input
-                    type="text"
-                    name="AddressDetails.Address"
-                    value={fetchData.AddressDetails.Address}
-                    onChange={handleFilechange}
-                    disabled={!isEditing}
-                    className="w-full p-3 border border-gray-300 rounded-md"
-                  />
-                <label className="block text-lg font-medium text-gray-700">Customer Country</label>
+                  type="text"
+                  name="GSTNnumber"
+                  value={customer.GSTNnumber}
+                  onChange={handleChange}
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          </Card>
+
+          <Card>
+            <h2 className="text-base font-semibold text-slate-900">Billing Address</h2>
+            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <label className={labelClass}>Billing Address</label>
                 <input
-                    type="text"
-                    name="AddressDetails.Country"
-                    value={fetchData.AddressDetails.Country}
-                    onChange={handleFilechange}
-                    disabled={!isEditing}
-                    className="w-full p-3 border border-gray-300 rounded-md"
-                  />
-                <label className="block text-lg font-medium text-gray-700">Client Name</label>
+                  type="text"
+                  name="BillingAddressDetails.BillingAddress"
+                  value={customer.BillingAddressDetails.BillingAddress}
+                  onChange={handleChange}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Billing Country</label>
                 <input
-                    type="text"
-                    name="clientName"
-                    value={arrayData.clientName}
-                    onChange={handlecustomerchange}
-                    disabled={!isEditing}
-                    className="w-full p-3 border border-gray-300 rounded-md"
-                  />
-                <label className="block text-lg font-medium text-gray-700">Description Details</label>
+                  type="text"
+                  name="BillingAddressDetails.BillingCountry"
+                  value={customer.BillingAddressDetails.BillingCountry}
+                  onChange={handleChange}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Billing City</label>
                 <input
-                    type="text"
-                    name="DescriptionDetails"
-                    value={arrayData.DescriptionDetails}
-                    onChange={handlecustomerchange}
-                    disabled={!isEditing}
-                    className="w-full p-3 border border-gray-300 rounded-md"
-                  />
-                <label className="block text-lg font-medium text-gray-700">Mobile Number</label>
+                  type="text"
+                  name="BillingAddressDetails.BillingCity"
+                  value={customer.BillingAddressDetails.BillingCity}
+                  onChange={handleChange}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Billing Postal Code</label>
                 <input
-                    type="text"
-                    name="CustomerDetails.MobileNumber"
-                    value={arrayData.CustomerDetails.MobileNumber}
-                    onChange={handlecustomerchange}
-                    disabled={!isEditing}
-                    className="w-full p-3 border border-gray-300 rounded-md"
-                  />
-                <label className="block text-lg font-medium text-gray-700">Opportunity Number</label>
+                  type="text"
+                  name="BillingAddressDetails.BillingPostalCode"
+                  value={customer.BillingAddressDetails.BillingPostalCode}
+                  onChange={handleChange}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Billing State</label>
                 <input
-                    type="text"
-                    name="CustomerDetails.opportunitynumber"
-                    value={arrayData.CustomerDetails.opportunitynumber}
-                    onChange={handlecustomerchange}
-                    disabled={!isEditing}
-                    className="w-full p-3 border border-gray-300 rounded-md"
-                  />
-                <label className="block text-lg font-medium text-gray-700">Primary Mail</label>
-                <input
-                    type="text"
-                    name="CustomerDetails.PrimaryMail"
-                    value={arrayData.CustomerDetails.PrimaryMail}
-                    onChange={handlecustomerchange}
-                    disabled={!isEditing}
-                    className="w-full p-3 border border-gray-300 rounded-md"
-                  />
-                <label className="block text-lg font-medium text-gray-700">Billing Address</label>
-                <input
-                    type="text"
-                    name="BillingAddressDetails.BillingAddress"
-                    value={arrayData.BillingAddressDetails.BillingAddress}
-                    onChange={handlecustomerchange}
-                    disabled={!isEditing}
-                    className="w-full p-3 border border-gray-300 rounded-md"
-                  />
-                <label className="block text-lg font-medium text-gray-700">Billing Country</label>
-                <input
-                    type="text"
-                    name="BillingAddressDetails.BillingCountry"
-                    value={arrayData.BillingAddressDetails.BillingCountry}
-                    onChange={handlecustomerchange}
-                    disabled={!isEditing}
-                    className="w-full p-3 border border-gray-300 rounded-md"
-                  />
-                <label className="block text-lg font-medium text-gray-700">Billing City</label>
-                <input
-                    type="text"
-                    name="BillingAddressDetails.BillingCity"
-                    value={arrayData.BillingAddressDetails.BillingCity}
-                    onChange={handlecustomerchange}
-                    disabled={!isEditing}
-                    className="w-full p-3 border border-gray-300 rounded-md"
-                  />
-                <label className="block text-lg font-medium text-gray-700">Billing State</label>
-                <input
-                    type="text"
-                    name="BillingAddressDetails.BillingState"
-                    value={arrayData.BillingAddressDetails.BillingState}
-                    onChange={handlecustomerchange}
-                    disabled={!isEditing}
-                    className="w-full p-3 border border-gray-300 rounded-md"
-                  />
-                <label className="block text-lg font-medium text-gray-700">Billing Postal Code</label>
-                <input
-                    type="text"
-                    name="BillingAddressDetails.BillingPostalCode"
-                    value={arrayData.BillingAddressDetails.BillingPostalCode}
-                    onChange={handlecustomerchange}
-                    disabled={!isEditing}
-                    className="w-full p-3 border border-gray-300 rounded-md"
-                  />
-              
-          <div className="flex justify-end space-x-4 mt-6">
-            <button
-              type="submit"
-              onClick={() => handleclick(arrayData.EnquiryNo, fetchData.CustomerId)}
-              className="py-3 px-6 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
-              disabled={!isEditing}
-            >
-              Update
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsEditing(!isEditing)}
-              className="py-3 px-6 bg-gray-500 text-white rounded-md hover:bg-gray-600"
-            >
-              {isEditing ? 'Cancel Edit' : 'Edit'}
-            </button>
+                  type="text"
+                  name="BillingAddressDetails.BillingState"
+                  value={customer.BillingAddressDetails.BillingState}
+                  onChange={handleChange}
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          </Card>
+
+          <Card>
+            <label className={labelClass}>Description</label>
+            <input
+              type="text"
+              name="DescriptionDetails"
+              value={customer.DescriptionDetails}
+              onChange={handleChange}
+              className={inputClass}
+            />
+          </Card>
+
+          <div className="flex justify-end">
+            <PrimaryButton type="submit" disabled={loading}>
+              <Save size={16} />
+              {loading ? 'Submitting...' : 'Submit'}
+            </PrimaryButton>
           </div>
         </form>
-      </div>
+      ) : (
+        <form onSubmit={updatedata} className="space-y-6">
+          <Card>
+            <h2 className="text-base font-semibold text-slate-900">Customer Details</h2>
+            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label className={labelClass}>EnquiryNo</label>
+                <input
+                  type="text"
+                  name="EnquiryNo"
+                  value={arrayData.EnquiryNo}
+                  onChange={handleFilechange}
+                  disabled={!isEditing}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>CustomerId</label>
+                <input
+                  type="text"
+                  name="CustomerId"
+                  value={fetchData.CustomerId}
+                  onChange={handleFilechange}
+                  disabled={!isEditing}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Company Name</label>
+                <input
+                  type="text"
+                  name="companyName"
+                  value={fetchData.companyName}
+                  onChange={handleFilechange}
+                  disabled={!isEditing}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Customer Address</label>
+                <input
+                  type="text"
+                  name="AddressDetails.Address"
+                  value={fetchData.AddressDetails.Address}
+                  onChange={handleFilechange}
+                  disabled={!isEditing}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Customer Country</label>
+                <input
+                  type="text"
+                  name="AddressDetails.Country"
+                  value={fetchData.AddressDetails.Country}
+                  onChange={handleFilechange}
+                  disabled={!isEditing}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Client Name</label>
+                <input
+                  type="text"
+                  name="clientName"
+                  value={arrayData.clientName}
+                  onChange={handlecustomerchange}
+                  disabled={!isEditing}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Description Details</label>
+                <input
+                  type="text"
+                  name="DescriptionDetails"
+                  value={arrayData.DescriptionDetails}
+                  onChange={handlecustomerchange}
+                  disabled={!isEditing}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Mobile Number</label>
+                <input
+                  type="text"
+                  name="CustomerDetails.MobileNumber"
+                  value={arrayData.CustomerDetails.MobileNumber}
+                  onChange={handlecustomerchange}
+                  disabled={!isEditing}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Opportunity Number</label>
+                <input
+                  type="text"
+                  name="CustomerDetails.opportunitynumber"
+                  value={arrayData.CustomerDetails.opportunitynumber}
+                  onChange={handlecustomerchange}
+                  disabled={!isEditing}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Primary Mail</label>
+                <input
+                  type="text"
+                  name="CustomerDetails.PrimaryMail"
+                  value={arrayData.CustomerDetails.PrimaryMail}
+                  onChange={handlecustomerchange}
+                  disabled={!isEditing}
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          </Card>
+
+          <Card>
+            <h2 className="text-base font-semibold text-slate-900">Billing Address</h2>
+            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <label className={labelClass}>Billing Address</label>
+                <input
+                  type="text"
+                  name="BillingAddressDetails.BillingAddress"
+                  value={arrayData.BillingAddressDetails.BillingAddress}
+                  onChange={handlecustomerchange}
+                  disabled={!isEditing}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Billing Country</label>
+                <input
+                  type="text"
+                  name="BillingAddressDetails.BillingCountry"
+                  value={arrayData.BillingAddressDetails.BillingCountry}
+                  onChange={handlecustomerchange}
+                  disabled={!isEditing}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Billing City</label>
+                <input
+                  type="text"
+                  name="BillingAddressDetails.BillingCity"
+                  value={arrayData.BillingAddressDetails.BillingCity}
+                  onChange={handlecustomerchange}
+                  disabled={!isEditing}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Billing State</label>
+                <input
+                  type="text"
+                  name="BillingAddressDetails.BillingState"
+                  value={arrayData.BillingAddressDetails.BillingState}
+                  onChange={handlecustomerchange}
+                  disabled={!isEditing}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Billing Postal Code</label>
+                <input
+                  type="text"
+                  name="BillingAddressDetails.BillingPostalCode"
+                  value={arrayData.BillingAddressDetails.BillingPostalCode}
+                  onChange={handlecustomerchange}
+                  disabled={!isEditing}
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          </Card>
+
+          <div className="flex justify-end gap-3">
+            <PrimaryButton
+              type="submit"
+              onClick={() => handleclick(arrayData.EnquiryNo, fetchData.CustomerId)}
+              disabled={!isEditing}
+            >
+              <Save size={16} />
+              Update
+            </PrimaryButton>
+            <SecondaryButton
+              type="button"
+              onClick={() => setIsEditing(!isEditing)}
+            >
+              {isEditing ? <X size={16} /> : <Pencil size={16} />}
+              {isEditing ? 'Cancel Edit' : 'Edit'}
+            </SecondaryButton>
+          </div>
+        </form>
       )}
-    </div>
-  
-    
-    
-
-   
-  </div>
-
+    </PageShell>
   );
 };
 

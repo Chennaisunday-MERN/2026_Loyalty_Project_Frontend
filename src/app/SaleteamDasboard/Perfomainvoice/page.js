@@ -2,7 +2,18 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Plus } from 'lucide-react';
 import PDFPage from './pdf';
+import {
+  PageShell,
+  PageHeader,
+  Card,
+  PrimaryButton,
+  SecondaryButton,
+  TableWrap,
+  Th,
+  Td,
+} from '../../_components/ui';
 
 const App = () => {
   const [rows, setRows] = useState([{
@@ -174,216 +185,198 @@ const App = () => {
     }
   };
 
+  const fieldInputClass =
+    "w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100";
+  const fieldLabelClass =
+    "mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500";
+  const cellInputClass =
+    "w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100";
+
   return (
     <>
       {!pdfPage ? (
-        <div className="max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-8">
-          <button
-          onClick={() => router.push('/SaleteamDasboard/Inventory')}
-          className="inline-flex items-center px-4 py-2 mb-6 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-            Back
-          </button>
-          <div className="flex justify-between items-center mb-8 border-b pb-4">
-          
-            <h2 className="text-2xl font-bold mt-6 text-gray-800">Proforma Invoice</h2>
-          </div>
+        <PageShell>
+          <PageHeader
+            eyebrow="Sales"
+            title="Proforma Invoice"
+            subtitle="Enter customer, invoice and line-item details to create an invoice."
+            onBack={() => router.push('/SaleteamDasboard/Inventory')}
+          />
 
           {/* Customer Details */}
-          <div className="bg-gray-50 rounded-lg p-6 mb-8">
-            <h3 className="text-lg font-semibold text-gray-700 mb-4">Customer Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card>
+            <h3 className="text-base font-semibold text-slate-900">Customer Details</h3>
+            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Customer Name</label>
-                <input value={name} onChange={(e) => setName(e.target.value)} className="w-full p-3 border-gray-300 border rounded-md" />
+                <label className={fieldLabelClass}>Customer Name</label>
+                <input value={name} onChange={(e) => setName(e.target.value)} className={fieldInputClass} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Address</label>
-                <input value={address} onChange={(e) => setAddress(e.target.value)} className="w-full p-3 border-gray-300 border rounded-md" />
+                <label className={fieldLabelClass}>Address</label>
+                <input value={address} onChange={(e) => setAddress(e.target.value)} className={fieldInputClass} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">GST Number</label>
-                <input value={gstNumber} onChange={(e) => setGstNumber(e.target.value)} className="w-full p-3 border-gray-300 border rounded-md" />
+                <label className={fieldLabelClass}>GST Number</label>
+                <input value={gstNumber} onChange={(e) => setGstNumber(e.target.value)} className={fieldInputClass} />
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Invoice Details */}
-          <div className="bg-gray-50 rounded-lg p-6 mb-8">
-            <h3 className="text-lg font-semibold text-gray-700 mb-4">Invoice Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card>
+            <h3 className="text-base font-semibold text-slate-900">Invoice Details</h3>
+            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Financial Year</label>
-                <input value={financialYear} onChange={(e) => setFinancialYear(e.target.value)} className="w-full p-3 border-gray-300 border rounded-md" />
+                <label className={fieldLabelClass}>Financial Year</label>
+                <input value={financialYear} onChange={(e) => setFinancialYear(e.target.value)} className={fieldInputClass} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Goods Return</label>
-                <select value={goodsReturn} onChange={(e) => handleTermsChange(e, 'goodsReturn')} className="w-full p-3 border-gray-300 border rounded-md">
+                <label className={fieldLabelClass}>Goods Return</label>
+                <select value={goodsReturn} onChange={(e) => handleTermsChange(e, 'goodsReturn')} className={fieldInputClass}>
                   <option value="Yes">Yes</option>
                   <option value="No">No</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Interest Rate</label>
-                <input value={interestRate} onChange={(e) => handleTermsChange(e, 'interestRate')} className="w-full p-3 border-gray-300 border rounded-md" />
+                <label className={fieldLabelClass}>Interest Rate</label>
+                <input value={interestRate} onChange={(e) => handleTermsChange(e, 'interestRate')} className={fieldInputClass} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Jurisdiction</label>
-                <input value={jurisdiction} onChange={(e) => handleTermsChange(e, 'jurisdiction')} className="w-full p-3 border-gray-300 border rounded-md" />
+                <label className={fieldLabelClass}>Jurisdiction</label>
+                <input value={jurisdiction} onChange={(e) => handleTermsChange(e, 'jurisdiction')} className={fieldInputClass} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Certification</label>
-                <select value={certification} onChange={(e) => handleTermsChange(e, 'certification')} className="w-full p-3 border-gray-300 border rounded-md">
+                <label className={fieldLabelClass}>Certification</label>
+                <select value={certification} onChange={(e) => handleTermsChange(e, 'certification')} className={fieldInputClass}>
                   <option value="True">True</option>
                   <option value="False">False</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Your Ref</label>
-                <input value={yourRef} onChange={(e) => setYourRef(e.target.value)} className="w-full p-3 border-gray-300 border rounded-md" />
+                <label className={fieldLabelClass}>Your Ref</label>
+                <input value={yourRef} onChange={(e) => setYourRef(e.target.value)} className={fieldInputClass} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Issue Date</label>
-                <input 
-                  type="date" 
-                  value={issueDate} 
-                  onChange={(e) => setIssueDate(e.target.value)} 
-                  className="w-full p-3 border-gray-300 border rounded-md" 
+                <label className={fieldLabelClass}>Issue Date</label>
+                <input
+                  type="date"
+                  value={issueDate}
+                  onChange={(e) => setIssueDate(e.target.value)}
+                  className={fieldInputClass}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Freight</label>
-                <input type="number" value={freight} onChange={(e) => setFreight(e.target.value)} className="w-full p-3 border-gray-300 border rounded-md" />
+                <label className={fieldLabelClass}>Freight</label>
+                <input type="number" value={freight} onChange={(e) => setFreight(e.target.value)} className={fieldInputClass} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">GST Percentage</label>
-                <input 
-                  type="number" 
-                  value={gstPercentage} 
-                  onChange={(e) => setGstPercentage(e.target.value)} 
-                  className="w-full p-3 border-gray-300 border rounded-md" 
+                <label className={fieldLabelClass}>GST Percentage</label>
+                <input
+                  type="number"
+                  value={gstPercentage}
+                  onChange={(e) => setGstPercentage(e.target.value)}
+                  className={fieldInputClass}
                 />
               </div>
             </div>
-          </div>
+          </Card>
 
-          {/* Product Table Card */}
-          <div className="bg-white rounded-lg shadow p-1 mb-8">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-100 text-left">
-                    {['S.No', 'HSN Code', 'Unit Description', 'UOM', 'Quantity', 'Unit Price', 'Total', ''].map((heading) => (
-                      <th key={heading} className="px-4 py-3 text-gray-600 font-semibold text-sm">{heading}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row, index) => (
-                    <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
-                      {['sno', 'hsnCode', 'unitDescription', 'uom', 'quantity', 'unitPrice'].map((field) => (
-                        <td key={field} className="px-4 py-3">
-                          <input
-                            type="text"
-                            value={row[field]}
-                            onChange={(e) => handleRowChange(index, e, field)}
-                            className="w-full px-4 py-2 border-gray-300 border rounded-md"
-                          />
-                        </td>
-                      ))}
-                      <td className="px-4 py-3">{row.total}</td>
-                      <td className="px-4 py-3">
-                        <button
-                          type="button"
-                          className="text-red-600"
-                          onClick={() => removeRow(index)}
-                        >
-                          Remove
-                        </button>
-                      </td>
-                    </tr>
+          {/* Product Table */}
+          <TableWrap>
+            <thead>
+              <tr>
+                {['S.No', 'HSN Code', 'Unit Description', 'UOM', 'Quantity', 'Unit Price', 'Total', ''].map((heading) => (
+                  <Th key={heading}>{heading}</Th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, index) => (
+                <tr key={index} className="hover:bg-slate-50">
+                  {['sno', 'hsnCode', 'unitDescription', 'uom', 'quantity', 'unitPrice'].map((field) => (
+                    <Td key={field}>
+                      <input
+                        type="text"
+                        value={row[field]}
+                        onChange={(e) => handleRowChange(index, e, field)}
+                        className={cellInputClass}
+                      />
+                    </Td>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                  <Td className="font-medium text-slate-900">{row.total}</Td>
+                  <Td>
+                    <button
+                      type="button"
+                      className="text-sm font-medium text-rose-600 hover:text-rose-700"
+                      onClick={() => removeRow(index)}
+                    >
+                      Remove
+                    </button>
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </TableWrap>
 
           {/* Add row button */}
-          <div className="flex justify-end mb-4">
-            <button
-              type="button"
-              onClick={addRow}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg"
-            >
+          <div className="flex justify-end">
+            <SecondaryButton onClick={addRow}>
+              <Plus size={16} />
               Add Row
-            </button>
+            </SecondaryButton>
           </div>
 
           {/* Subtotal and Total Calculation */}
-          <div className="flex justify-between mb-8">
-            <div className="w-1/2 pr-2">
-              <label className="block text-sm font-medium text-gray-600">Subtotal</label>
-              <input
-                type="text"
-                value={calculateSubtotal().toFixed(2)}
-                readOnly
-                className="w-full p-3 border-gray-300 border rounded-md bg-gray-100"
-              />
+          <Card>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className={fieldLabelClass}>Subtotal</label>
+                <input
+                  type="text"
+                  value={calculateSubtotal().toFixed(2)}
+                  readOnly
+                  className={`${fieldInputClass} bg-slate-100`}
+                />
+              </div>
+              <div>
+                <label className={fieldLabelClass}>Total GST</label>
+                <input
+                  type="text"
+                  value={calculatedGst}
+                  readOnly
+                  className={`${fieldInputClass} bg-slate-100`}
+                />
+              </div>
+              <div>
+                <label className={fieldLabelClass}>Total Payable</label>
+                <input
+                  type="text"
+                  value={calculateTotalPayable()}
+                  readOnly
+                  className={`${fieldInputClass} bg-slate-100`}
+                />
+              </div>
+              <div>
+                <label className={fieldLabelClass}>Round Off</label>
+                <input
+                  type="text"
+                  value={calculateRoundOff()}
+                  readOnly
+                  className={`${fieldInputClass} bg-slate-100`}
+                />
+              </div>
             </div>
-            <div className="w-1/2 pl-2">
-              <label className="block text-sm font-medium text-gray-600">Total GST</label>
-              <input
-                type="text"
-                value={calculatedGst}
-                readOnly
-                className="w-full p-3 border-gray-300 border rounded-md bg-gray-100"
-              />
-            </div>
-          </div>
-
-          {/* Total Payable Calculation */}
-          <div className="flex justify-between mb-8">
-            <div className="w-1/2 pr-2">
-              <label className="block text-sm font-medium text-gray-600">Total Payable</label>
-              <input
-                type="text"
-                value={calculateTotalPayable()}
-                readOnly
-                className="w-full p-3 border-gray-300 border rounded-md bg-gray-100"
-              />
-            </div>
-            <div className="w-1/2 pl-2">
-              <label className="block text-sm font-medium text-gray-600">Round Off</label>
-              <input
-                type="text"
-                value={calculateRoundOff()}
-                readOnly
-                className="w-full p-3 border-gray-300 border rounded-md bg-gray-100"
-              />
-            </div>
-          </div>
+          </Card>
 
           <div className="flex justify-end">
-            <button
-              type="button"
+            <PrimaryButton
               disabled={!isFormFilled}
               onClick={createInvoice}
-              className={`px-6 py-3 ${isFormFilled ? 'bg-green-600' : 'bg-gray-400'} text-white rounded-lg`}
             >
               Create Invoice
-            </button>
+            </PrimaryButton>
           </div>
-        </div>
+        </PageShell>
       ) : (
         <PDFPage
         invoice={invoiceData}

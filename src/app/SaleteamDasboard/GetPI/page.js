@@ -4,6 +4,18 @@ import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import html2pdf from 'html2pdf.js';
 import { toWords } from 'number-to-words';
+import {
+  PageShell,
+  PageHeader,
+  PrimaryButton,
+  SecondaryButton,
+  TableWrap,
+  Th,
+  Td,
+  Badge,
+  LoadingBlock,
+  ErrorBanner,
+} from "../../_components/ui";
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState([]);
@@ -268,77 +280,55 @@ const handleGeneratePDF = async (piId) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <button
-        onClick={() => router.push("/SaleteamDasboard/Dasboard")}
-        className="inline-flex items-center px-4 py-2 mb-6 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5 mr-2"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
-        Back
-      </button>
+    <PageShell>
+      <PageHeader
+        eyebrow="Sales"
+        title="Invoices"
+        subtitle="Proforma invoices and their current status."
+        onBack={() => router.push("/SaleteamDasboard/Dasboard")}
+      />
 
-      <h1 className="text-3xl font-semibold text-gray-800 mb-6">Invoices</h1>
-      
-      {loading && <p className="text-blue-500">Loading invoices...</p>}
-      {error && <p className="text-red-500">Error: {error}</p>}
-      
+      {loading && <LoadingBlock label="Loading invoices…" />}
+      {error && <ErrorBanner>Error: {error}</ErrorBanner>}
+
       {!loading && !error && (
-        <div className="overflow-auto rounded-lg shadow-md border border-gray-200">
-          <table className="min-w-full table-auto bg-white">
-            <thead className="bg-gray-100 text-sm text-gray-700 uppercase">
-              <tr>
-                <th className="px-6 py-3">Reference</th>
-                <th className="px-6 py-3">Name</th>
-                <th className="px-6 py-3">Date</th>
-                <th className="px-6 py-3">Total</th>
-                <th className="px-6 py-3">Status</th>
-                <th className="px-6 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="text-gray-700">
-              {invoices.map((invoice) => (
-                <tr key={invoice._id} className="border-t hover:bg-gray-50">
-                  <td className="px-6 py-4">{invoice.referenceNumber}</td>
-                  <td className="px-6 py-4">{invoice.name}</td>
-                  <td className="px-6 py-4">{new Date(invoice.issueDate).toLocaleDateString()}</td>
-                  <td className="px-6 py-4">₹{invoice.totalPayable.toFixed(2)}</td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`px-3 py-1 text-sm rounded-full font-medium ${
-                        invoice.Status === 'POreq' ? 'bg-yellow-200 text-yellow-800' : 'bg-green-200 text-green-800'
-                      }`}
-                    >
-                      {invoice.Status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 space-x-2">
-                    <button
-                      onClick={() => handleViewMore(invoice.piId)}
-                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm transition duration-300"
-                    >
+        <TableWrap>
+          <thead>
+            <tr>
+              <Th>Reference</Th>
+              <Th>Name</Th>
+              <Th>Date</Th>
+              <Th>Total</Th>
+              <Th>Status</Th>
+              <Th>Actions</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {invoices.map((invoice) => (
+              <tr key={invoice._id} className="hover:bg-slate-50">
+                <Td className="font-medium text-slate-900">{invoice.referenceNumber}</Td>
+                <Td>{invoice.name}</Td>
+                <Td>{new Date(invoice.issueDate).toLocaleDateString()}</Td>
+                <Td>₹{Number(invoice.totalPayable || 0).toFixed(2)}</Td>
+                <Td>
+                  <Badge tone={invoice.Status === 'POreq' ? 'amber' : 'green'}>
+                    {invoice.Status}
+                  </Badge>
+                </Td>
+                <Td>
+                  <div className="flex items-center gap-2">
+                    <SecondaryButton onClick={() => handleViewMore(invoice.piId)}>
                       View More
-                    </button>
-                    <button
-                      onClick={() => handleGeneratePDF(invoice.piId)}
-                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm transition duration-300"
-                    >
+                    </SecondaryButton>
+                    <PrimaryButton onClick={() => handleGeneratePDF(invoice.piId)}>
                       Generate PDF
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    </PrimaryButton>
+                  </div>
+                </Td>
+              </tr>
+            ))}
+          </tbody>
+        </TableWrap>
       )}
 
       {/* PDF Modal */}
@@ -347,19 +337,13 @@ const handleGeneratePDF = async (piId) => {
           <div className="bg-white p-4 rounded-lg w-full max-w-5xl max-h-screen overflow-auto">
             <div className="flex justify-between mb-4">
               <h2 className="text-xl font-bold">Invoice Preview</h2>
-              <div className="space-x-2">
-                <button
-                  onClick={handleDownloadPDF}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"
-                >
+              <div className="flex items-center gap-2">
+                <PrimaryButton onClick={handleDownloadPDF}>
                   Download PDF
-                </button>
-                <button
-                  onClick={() => setShowPdfModal(false)}
-                  className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md"
-                >
+                </PrimaryButton>
+                <SecondaryButton onClick={() => setShowPdfModal(false)}>
                   Close
-                </button>
+                </SecondaryButton>
               </div>
             </div>
             
@@ -497,6 +481,6 @@ const handleGeneratePDF = async (piId) => {
           </div>
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }

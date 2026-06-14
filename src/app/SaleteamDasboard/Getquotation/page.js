@@ -2,6 +2,19 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import axios from "axios";
+import { Plus, Pencil, X, Save } from "lucide-react";
+import {
+  PageShell,
+  PageHeader,
+  Card,
+  PrimaryButton,
+  SecondaryButton,
+  TableWrap,
+  Th,
+  Td,
+  LoadingBlock,
+  ErrorBanner,
+} from "../../_components/ui";
 
 const Getquotation = () => {
   const searchparams = useSearchParams();
@@ -78,6 +91,18 @@ const Getquotation = () => {
 
   
 
+  // Recalculate the overall payable amount from the line items, freight and GST.
+  const computePayable = (products, gst, freight) => {
+    const overallTotal = products.reduce(
+      (sum, p) => sum + (Number(p.Quantity) || 0) * (Number(p.UnitPrice) || 0),
+      0
+    );
+    const taxableAmount = overallTotal + (Number(freight) || 0);
+    const gstValue = Number(gst) || 0;
+    const finalAmount = taxableAmount + (gstValue > 0 ? (taxableAmount * gstValue) / 100 : 0);
+    return finalAmount.toFixed(2);
+  };
+
   const handleChange = (e, index, field) => {
     const updatedProducts = [...formData.products];
     const value = e.target.value;
@@ -101,7 +126,19 @@ const Getquotation = () => {
     setFormData((prevData) => ({
       ...prevData,
       products: updatedProducts,
+      PayableAmount: computePayable(updatedProducts, prevData.Gst, prevData.Freight),
     }));
+  };
+
+  // Recalculate the payable amount when GST is edited.
+  const handleFieldChange = (field, value) => {
+    setFormData((prevData) => {
+      const next = { ...prevData, [field]: value };
+      if (field === "Gst" || field === "Freight") {
+        next.PayableAmount = computePayable(prevData.products || [], field === "Gst" ? value : prevData.Gst, field === "Freight" ? value : prevData.Freight);
+      }
+      return next;
+    });
   };
 
   const handleAddProduct = () => {
@@ -113,6 +150,7 @@ const Getquotation = () => {
       UnitPrice: "",
       UOM: "",
       Total: "",
+      LP: "",
     };
 
     setFormData((prevData) => ({
@@ -168,138 +206,133 @@ const Getquotation = () => {
     }
   };
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p className="text-red-500">{error}</p>;
+  const fieldInputClass =
+    "w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100";
+  const cellInputClass =
+    "w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100";
+  const labelClass = "mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500";
+
+  if (loading) return <PageShell><LoadingBlock label="Loading quotation…" /></PageShell>;
+  if (error)
+    return (
+      <PageShell>
+        <ErrorBanner>{error}</ErrorBanner>
+      </PageShell>
+    );
 
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white shadow-md rounded-lg">
-       <button
-          onClick={() => router.push("/SaleteamDasboard/Dasboard")}
-          className="inline-flex items-center px-4 py-2 mb-6 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-            Back
-          </button>
-      <h1 className="text-2xl font-bold text-center mb-6">Quotation Details</h1>
-      <form ref={formRef} className="space-y-4">
+    <PageShell>
+      <PageHeader
+        eyebrow="Sales"
+        title="Quotation Details"
+        subtitle="Review and edit quotation line items and terms."
+        onBack={() => router.push("/SaleteamDasboard/Dasboard")}
+        actions={
+          mode !== "pdf" ? (
+            <>
+              <SecondaryButton onClick={handleEditToggle}>
+                {isEditing ? <X size={16} /> : <Pencil size={16} />}
+                {isEditing ? "Cancel Edit" : "Edit"}
+              </SecondaryButton>
+              {isEditing && (
+                <PrimaryButton onClick={handleSave}>
+                  <Save size={16} />
+                  Save
+                </PrimaryButton>
+              )}
+            </>
+          ) : null
+        }
+      />
+
+      <form ref={formRef} className="space-y-6">
         {/* Products Table */}
-        <div className="overflow-x-auto">
-          <table className="table-auto w-full border-collapse">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="px-4 py-2 border">HSN Code</th>
-                <th className="px-4 py-2 border">Unit Description</th>
-                <th className="px-4 py-2 border">Description</th>
-                <th className="px-4 py-2 border">Quantity</th>
-                <th className="px-4 py-2 border">Unit Price</th>
-                <th className="px-4 py-2 border">UOM</th>
-                <th className="px-4 py-2 border">Total</th>
+        <TableWrap>
+          <thead>
+            <tr>
+              <Th>HSN Code</Th>
+              <Th>Unit Description</Th>
+              <Th>Description</Th>
+              <Th>Quantity</Th>
+              <Th>Unit Price</Th>
+              <Th>UOM</Th>
+              <Th>Total</Th>
+              <Th>LP</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {formData.products.map((product, index) => (
+              <tr key={index} className="hover:bg-slate-50">
+                {["HSNCode", "UnitDescription", "Description", "Quantity", "UnitPrice", "UOM", "Total", "LP"].map(
+                  (field) => (
+                    <Td key={field} className={field === "HSNCode" ? "font-medium text-slate-900" : ""}>
+                      {isEditing && field !== "Total" ? (
+                        <input
+                          type={["Quantity", "UnitPrice"].includes(field) ? "number" : "text"}
+                          value={product[field] || ""}
+                          onChange={(e) => handleChange(e, index, field)}
+                          className={cellInputClass}
+                        />
+                      ) : (
+                        product[field]
+                      )}
+                    </Td>
+                  )
+                )}
               </tr>
-            </thead>
-            <tbody>
-              {formData.products.map((product, index) => (
-                <tr key={index}>
-                  {["HSNCode", "UnitDescription", "Description", "Quantity", "UnitPrice", "UOM", "Total"].map(
-                    (field) => (
-                      <td key={field} className="px-4 py-2 border">
-                        {isEditing && field !== "Total" ? (
-                          <input
-                            type={["Quantity", "UnitPrice"].includes(field) ? "number" : "text"}
-                            value={product[field] || ""}
-                            onChange={(e) => handleChange(e, index, field)}
-                            className="w-full px-2 py-1 border rounded"
-                          />
-                        ) : (
-                          product[field]
-                        )}
-                      </td>
-                    )
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </TableWrap>
 
         {/* Add Product */}
         {isEditing && (
-          <button
-            type="button"
-            onClick={handleAddProduct}
-            className="mt-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-          >
-            + Add Product
-          </button>
+          <SecondaryButton onClick={handleAddProduct}>
+            <Plus size={16} />
+            Add Product
+          </SecondaryButton>
         )}
 
         {/* Other fields */}
-        {["Paymentdue", "validity", "Warranty", "Delivery", "Discount", "PayableAmount", "Gst", "Status"].map(
-          (field) => (
-            <div key={field}>
-              <label className="text-gray-700">{field}</label>
-              <input
-                name={field}
-                value={formData[field] || ""}
-                onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg"
-                disabled={!isEditing}
-              />
-            </div>
-          )
-        )}
+        <Card>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {["Paymentdue", "validity", "Warranty", "Delivery", "Discount", "PayableAmount", "Gst", "Status"].map(
+              (field) => (
+                <div key={field}>
+                  <label className={labelClass}>{field}</label>
+                  <input
+                    name={field}
+                    value={formData[field] || ""}
+                    onChange={(e) => handleFieldChange(field, e.target.value)}
+                    className={fieldInputClass}
+                    disabled={!isEditing || field === "PayableAmount"}
+                  />
+                </div>
+              )
+            )}
 
-        {/* Revision Number */}
-        {isEditing && (
-          <div>
-            <label className="text-gray-700">Revision Number (e.g. R1, R2)</label>
-            <input
-              name="revisionNumber"
-              value={revisionNumber}
-              onChange={(e) => setRevisionNumber(e.target.value)}
-              placeholder="Enter revision (e.g., R1)"
-              className="w-full px-4 py-2 border rounded-lg"
-            />
-            <p className="text-sm text-gray-500 mt-1">
-              Current Reference: {formData.ReferenceNumber || "None"}
-            </p>
-          </div>
-        )}
-
-        {/* Buttons */}
-        {mode !== "pdf" && (
-          <div className="flex space-x-2">
-            <button
-              type="button"
-              onClick={handleEditToggle}
-              className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
-            >
-              {isEditing ? "Cancel Edit" : "Edit"}
-            </button>
+            {/* Revision Number */}
             {isEditing && (
-              <button
-                type="button"
-                onClick={handleSave}
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-              >
-                Save
-              </button>
+              <div className="md:col-span-2">
+                <label className={labelClass}>Revision Number (e.g. R1, R2)</label>
+                <input
+                  name="revisionNumber"
+                  value={revisionNumber}
+                  onChange={(e) => setRevisionNumber(e.target.value)}
+                  placeholder="Enter revision (e.g., R1)"
+                  className={fieldInputClass}
+                />
+                <p className="mt-1 text-sm text-slate-500">
+                  Current Reference: {formData.ReferenceNumber || "None"}
+                </p>
+              </div>
             )}
           </div>
-        )}
+        </Card>
 
         {/* Error Message */}
-        {errorMessage && <p className="text-red-500">{errorMessage}</p>}
+        {errorMessage && <ErrorBanner>{errorMessage}</ErrorBanner>}
       </form>
-    </div>
+    </PageShell>
   );
 };
 

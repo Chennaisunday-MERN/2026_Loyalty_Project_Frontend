@@ -4,9 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BarChart3,
   Boxes,
-  BriefcaseBusiness,
   CheckCircle2,
   ClipboardList,
   Eye,
@@ -43,14 +41,12 @@ const baseGroups = (role) => [
       { label: "Not Converted", icon: XCircle, href: "/SaleteamDasboard/Cnc" },
       { label: "Customers", icon: Users, href: "/SaleteamDasboard/Getcustomerdetails" },
       { label: "Quotations", icon: FileText, href: "/SaleteamDasboard/GetEidQuotation" },
-      { label: "Sales Orders", icon: BarChart3, href: "/SaleteamDasboard/GetSO" },
     ],
   },
   {
     title: "Procurement",
     links: [
       { label: "Inventory", icon: Boxes, href: "/SaleteamDasboard/Inventory" },
-      { label: "Product Request", icon: BriefcaseBusiness, href: "/SaleteamDasboard/Productrequest" },
       { label: "Purchase Orders", icon: ShoppingCart, href: "/SaleteamDasboard/GetPO" },
       { label: "Proforma Invoices", icon: ReceiptText, href: "/SaleteamDasboard/GetPI" },
     ],

@@ -1,12 +1,22 @@
 "use client";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { useRouter } from 'next/navigation'; 
+import { useRouter } from 'next/navigation';
+import { Pencil, Trash2, FileText } from "lucide-react";
+import {
+  PageShell,
+  PageHeader,
+  TableWrap,
+  Th,
+  Td,
+  LoadingBlock,
+  EmptyState,
+} from "../../_components/ui";
 
 export default function SuppliersTable() {
   const [suppliersWithPOs, setSuppliersWithPOs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const token = localStorage.getItem("admintokens");
+  const token = typeof window !== "undefined" ? localStorage.getItem("admintokens") : null;
   const router = useRouter();
   useEffect(() => {
     const fetchData = async () => {
@@ -56,133 +66,116 @@ export default function SuppliersTable() {
     if (!poNumber) return;
     router.push(`/SaleteamDasboard/POPdf?poNumber=${poNumber}`);
   };
-  
-
-  if (loading) return <p>Loading suppliers and purchase orders...</p>;
 
   return (
-    <div className="p-6 bg-gradient-to-br from-blue-50 to-purple-100 min-h-screen">
-    <div className="max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-6">
-    <button
-          onClick={() => router.push("/SaleteamDasboard/Dasboard")}
-          className="inline-flex items-center px-4 py-2 mb-6 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-            Back
-          </button>
-      <h2 className="text-3xl font-extrabold text-purple-700 mb-6 border-b-2 border-purple-300 pb-2">
-        Supplier & Purchase Orders
-      </h2>
-  
-      <div className="overflow-x-auto rounded-lg">
-        <table className="min-w-full table-auto border border-purple-300 rounded-lg overflow-hidden">
+    <PageShell>
+      <PageHeader
+        eyebrow="Procurement"
+        title="Supplier & Purchase Orders"
+        subtitle="All suppliers and their associated purchase orders."
+        onBack={() => router.push("/SaleteamDasboard/Dasboard")}
+      />
+
+      {loading ? (
+        <LoadingBlock label="Loading suppliers and purchase orders…" />
+      ) : suppliersWithPOs.length === 0 ? (
+        <EmptyState title="No suppliers to display" subtitle="Suppliers will appear here." />
+      ) : (
+        <TableWrap>
           <thead>
-            <tr className="bg-purple-100 text-purple-900">
-              <th className="px-5 py-3 text-left font-semibold border border-purple-300">Supplier Name</th>
-              <th className="px-5 py-3 text-left font-semibold border border-purple-300">GSTIN</th>
-              <th className="px-5 py-3 text-left font-semibold border border-purple-300">PO Number</th>
-              <th className="px-5 py-3 text-left font-semibold border border-purple-300">PO Created Date</th>
-              <th className="px-5 py-3 text-left font-semibold border border-purple-300">Actions</th>
+            <tr>
+              <Th>Supplier Name</Th>
+              <Th>GSTIN</Th>
+              <Th>PO Number</Th>
+              <Th>PO Created Date</Th>
+              <Th>Actions</Th>
             </tr>
           </thead>
-          <tbody className="text-gray-700">
+          <tbody>
             {suppliersWithPOs.map((supplier) =>
               supplier.purchaseOrders.length > 0 ? (
                 supplier.purchaseOrders.map((po, index) => (
-                  <tr key={`${supplier._id}-${index}`} className="hover:bg-purple-50 transition-all">
+                  <tr key={`${supplier._id}-${index}`} className="hover:bg-slate-50">
                     {index === 0 && (
                       <>
-                        <td
-                          className="px-5 py-4 border border-purple-200 align-top font-medium"
+                        <Td
+                          className="align-top font-medium text-slate-900"
                           rowSpan={supplier.purchaseOrders.length}
                         >
                           {supplier.SupplierName}
-                        </td>
-                        <td
-                          className="px-5 py-4 border border-purple-200 align-top"
+                        </Td>
+                        <Td
+                          className="align-top"
                           rowSpan={supplier.purchaseOrders.length}
                         >
                           {supplier.GSTIN}
-                        </td>
+                        </Td>
                       </>
                     )}
-                    <td className="px-5 py-4 border border-purple-200">{po.poNumber}</td>
-                    <td className="px-5 py-4 border border-purple-200">
-                      {new Date(po.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-5 py-4 border border-purple-200 space-x-2 flex items-center">
-                      <button
-                        title="View"
-                        onClick={() =>
-                          router.push(`/SaleteamDasboard/Editview?poNumber=${po.poNumber}`)
-                        }
-                        className="bg-blue-100 hover:bg-blue-200 p-2 rounded-full transition"
-                      >
-                        <img src="/viewmore.png" alt="View" className="w-5 h-5" />
-                      </button>
-  
-                      <button
-                        title="Delete"
-                        onClick={async () => {
-                          if (
-                            confirm(`Are you sure you want to delete PO: ${po.poNumber}?`)
-                          ) {
-                            try {
-                              await axios.delete(
-                                `http://localhost:5005/api-purchaseorder/deletePO?poNumber=${po.poNumber}`,
-                                {
-                                  headers: { Authorization: `Bearer ${token}` },
-                                }
-                              );
-                              alert("PO deleted successfully.");
-                              window.location.reload();
-                            } catch (error) {
-                              console.error("❌ Error deleting PO:", error);
-                              alert("Failed to delete PO.");
-                            }
+                    <Td>{po.poNumber}</Td>
+                    <Td>{new Date(po.createdAt).toLocaleDateString()}</Td>
+                    <Td>
+                      <div className="flex items-center gap-2">
+                        <button
+                          title="View / Edit"
+                          onClick={() =>
+                            router.push(`/SaleteamDasboard/Editview?poNumber=${po.poNumber}`)
                           }
-                        }}
-                        className="bg-red-100 hover:bg-red-200 p-2 rounded-full transition"
-                      >
-                        <img src="/delete.png" alt="Delete" className="w-5 h-5" />
-                      </button>
-  
-                      <button
-                        title="Download PDF"
-                        onClick={() => handleGeneratePDF(po.poNumber)}
-                        className="bg-green-100 hover:bg-green-200 p-2 rounded-full transition"
-                      >
-                        <img src="/Pdfview.png" alt="PDF" className="w-5 h-5" />
-                      </button>
-                    </td>
+                          className="rounded-md p-2 text-blue-600 hover:bg-blue-50 transition-colors"
+                        >
+                          <Pencil size={18} />
+                        </button>
+
+                        <button
+                          title="Delete"
+                          onClick={async () => {
+                            if (
+                              confirm(`Are you sure you want to delete PO: ${po.poNumber}?`)
+                            ) {
+                              try {
+                                await axios.delete(
+                                  `http://localhost:5005/api-purchaseorder/deletePO?poNumber=${po.poNumber}`,
+                                  {
+                                    headers: { Authorization: `Bearer ${token}` },
+                                  }
+                                );
+                                alert("PO deleted successfully.");
+                                window.location.reload();
+                              } catch (error) {
+                                console.error("❌ Error deleting PO:", error);
+                                alert("Failed to delete PO.");
+                              }
+                            }
+                          }}
+                          className="rounded-md p-2 text-rose-600 hover:bg-rose-50 transition-colors"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+
+                        <button
+                          title="Download PDF"
+                          onClick={() => handleGeneratePDF(po.poNumber)}
+                          className="rounded-md p-2 text-emerald-600 hover:bg-emerald-50 transition-colors"
+                        >
+                          <FileText size={18} />
+                        </button>
+                      </div>
+                    </Td>
                   </tr>
                 ))
               ) : (
-                <tr key={supplier._id} className="bg-gray-50">
-                  <td className="px-5 py-4 border border-purple-200">{supplier.SupplierName}</td>
-                  <td className="px-5 py-4 border border-purple-200">{supplier.GSTIN}</td>
-                  <td className="px-5 py-4 text-center text-gray-500 border border-purple-200" colSpan={3}>
+                <tr key={supplier._id} className="hover:bg-slate-50">
+                  <Td className="font-medium text-slate-900">{supplier.SupplierName}</Td>
+                  <Td>{supplier.GSTIN}</Td>
+                  <Td className="text-center text-slate-500" colSpan={3}>
                     No Purchase Orders
-                  </td>
+                  </Td>
                 </tr>
               )
             )}
           </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-  
-
-
+        </TableWrap>
+      )}
+    </PageShell>
   );
 }

@@ -232,7 +232,7 @@ export default function Dashboard() {
         type="button"
         onClick={() => assignLead(item.EnquiryNo)}
         disabled={!assignSelections[item.EnquiryNo]}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-700 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:from-blue-800 hover:to-indigo-700 disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
       >
         <UserPlus size={16} />
         Assign

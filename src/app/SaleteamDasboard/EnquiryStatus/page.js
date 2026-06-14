@@ -2,7 +2,16 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useSearchParams, useRouter } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { User, IdCard, Info, Tag } from "lucide-react";
+import {
+  PageShell,
+  PageHeader,
+  Card,
+  Field,
+  Badge,
+  LoadingBlock,
+  ErrorBanner,
+} from "../../_components/ui";
 
 const EnquiryStatus = () => {
   const [enquiryData, setEnquiryData] = useState(null);
@@ -56,86 +65,59 @@ const EnquiryStatus = () => {
 
   if (error)
     return (
-      <div className="text-red-500 text-center mt-10 font-semibold">{error}</div>
+      <PageShell>
+        <ErrorBanner>{error}</ErrorBanner>
+      </PageShell>
     );
   if (!enquiryData)
-    return <div className="text-center mt-10 font-medium">Loading...</div>;
+    return (
+      <PageShell>
+        <LoadingBlock label="Loading enquiry status…" />
+      </PageShell>
+    );
 
   const data = enquiryData.data;
 
   return (
-    <div className="bg-gray-100 min-h-screen py-10">
-      <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6">
-        {/* Back Button */}
-        <button
-          onClick={handleBackClick}
-          className="inline-flex items-center px-4 py-2 mb-6 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-            Back
-          </button>
+    <PageShell>
+      <PageHeader
+        eyebrow="Leads"
+        title={`Enquiry Status for ${enquiryData.EnquiryNo}`}
+        subtitle="Current status and details of this enquiry."
+        onBack={handleBackClick}
+      />
 
-        {/* Header */}
-        <h1 className="text-3xl font-semibold text-center text-gray-800 mb-8">
-          Enquiry Status for {enquiryData.EnquiryNo}
-        </h1>
-
-        {/* Enquiry Details */}
-        {data ? (
-          <div className="bg-green-50 p-6 rounded-lg shadow-md mb-6">
-            <h2 className="text-xl font-semibold text-green-600">
-              Source: {enquiryData.source}
-            </h2>
-            <div className="mt-4 space-y-2">
-              <p>
-                <span className="font-bold text-gray-700">Status:</span>{" "}
-                {data.Status || "N/A"}
-              </p>
-              <p>
-                <span className="font-bold text-gray-700">Client Name:</span>{" "}
-                {data.clientName || "N/A"}
-              </p>
-
-              {data.DescriptionDetails && (
-                <p>
-                  <span className="font-bold text-gray-700">
-                    Additional Info:
-                  </span>{" "}
-                  {data.DescriptionDetails}
-                </p>
-              )}
-
-              {data.Convertedstatus && (
-                <p>
-                  <span className="font-bold text-gray-700">
-                    Converted Status:
-                  </span>{" "}
-                  {data.Convertedstatus}
-                </p>
-              )}
-
-              <p>
-                <span className="font-bold text-gray-700">EID:</span>{" "}
-                {data.Eid || "N/A"}
-              </p>
+      {data ? (
+        <Card className="mx-auto max-w-3xl">
+          <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Source</p>
+              <h2 className="text-base font-semibold text-slate-900">{enquiryData.source}</h2>
             </div>
+            <Badge tone="blue">{data.Status || "N/A"}</Badge>
           </div>
-        ) : (
-          <div className="bg-yellow-50 p-6 rounded-lg shadow-md text-center text-gray-700">
-            <p>No data available for this enquiry.</p>
+
+          <div className="mt-4 space-y-4">
+            <Field label="Status" icon={Tag}>{data.Status || "N/A"}</Field>
+            <Field label="Client Name" icon={User}>{data.clientName || "N/A"}</Field>
+
+            {data.DescriptionDetails && (
+              <Field label="Additional Info" icon={Info}>{data.DescriptionDetails}</Field>
+            )}
+
+            {data.Convertedstatus && (
+              <Field label="Converted Status" icon={Tag}>{data.Convertedstatus}</Field>
+            )}
+
+            <Field label="EID" icon={IdCard}>{data.Eid || "N/A"}</Field>
           </div>
-        )}
-      </div>
-    </div>
+        </Card>
+      ) : (
+        <Card className="mx-auto max-w-3xl text-center text-slate-600">
+          <p>No data available for this enquiry.</p>
+        </Card>
+      )}
+    </PageShell>
   );
 };
 

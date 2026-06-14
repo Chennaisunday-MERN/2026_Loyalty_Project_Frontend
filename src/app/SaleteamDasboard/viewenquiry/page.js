@@ -3,6 +3,16 @@ import { useState , useEffect } from "react";
 import React from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import {
+  PageShell,
+  PageHeader,
+  Card,
+  PrimaryButton,
+  SecondaryButton,
+  TableWrap,
+  Th,
+  Td,
+} from "../../_components/ui";
 
 const ViewEnquiryPage = () => {
   const [enquiryData, setEnquiryData] = useState([]);
@@ -11,9 +21,9 @@ const ViewEnquiryPage = () => {
   const [EidToAssign, setEidToAssign] = useState("");
   const [saleEnquiryData, setSaleEnquiryData] = useState([]);
   const [selectedEnquiries, setSelectedEnquiries] = useState([]);
-  const token = localStorage.getItem("admintokens");
-  const Eid = localStorage.getItem("idstore");
-  const role = localStorage.getItem("role");
+  const token = typeof window !== "undefined" ? localStorage.getItem("admintokens") : null;
+  const Eid = typeof window !== "undefined" ? localStorage.getItem("idstore") : null;
+  const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
   const router = useRouter();
 
   
@@ -76,189 +86,139 @@ const ViewEnquiryPage = () => {
     router.push('/SaleteamDasboard/perfoma');
   };
 
+  const actionButtons = (data) => (
+    <div className="flex flex-col gap-2">
+      <SecondaryButton onClick={() => handleComplete(data._id)}>Complete</SecondaryButton>
+      <div className="flex gap-2">
+        <SecondaryButton onClick={Quotation}>Quotation</SecondaryButton>
+        <SecondaryButton onClick={Salesorder}>Sales Order</SecondaryButton>
+        <SecondaryButton onClick={perfoma}>Perfoma</SecondaryButton>
+      </div>
+    </div>
+  );
+
   return (
     (role === "sales head" || role === "Sales Employee") && (
-      <div className="min-h-screen bg-gradient-to-br from-green-100 to-green-300 p-8">
-        <div className="bg-white rounded-xl shadow-2xl p-6">
-          <h2 className="text-3xl font-semibold text-center text-green-600">Dashboard</h2>
+      <PageShell>
+        <PageHeader
+          eyebrow="Leads"
+          title="Enquiry Data"
+          subtitle="Review enquiries and assign them to a sales engineer."
+          onBack={() => router.push("/SaleteamDasboard/Dasboard")}
+        />
 
-          {/* Other navigation buttons... */}
-
-          <h1 className="text-4xl font-bold text-center text-green-600 mb-4">Enquiry Data</h1>
-          <form onSubmit={handlesubmit} className="space-y-6">
-            {/* Table with header */}
-            <div className="overflow-x-auto">
-              <table className="min-w-full table-auto text-left bg-white shadow-lg rounded-lg">
-                <thead>
-                  <tr className="bg-green-100 text-green-600">
-                    {role === "sales head" && <th className="px-4 py-2">Select</th>}
-                    <th className="px-4 py-2">COMPANY NAME</th>
-                    <th className="px-4 py-2">CONTACT PERSON</th>
-                    <th className="px-4 py-2">DEPARTMENT</th>
-                    <th className="px-4 py-2">LEAD MEDIUM</th>
-                    <th className="px-4 py-2">LEAD PRIORITY</th>
-                    <th className="px-4 py-2">ENQUIRY TYPE</th>
-                    <th className="px-4 py-2">LEAD CONDITION</th>
-                    <th className="px-4 py-2">CONTACT NUMBER</th>
-                    <th className="px-4 py-2">ALTERNATE PHONE NUMBER</th>
-                    <th className="px-4 py-2">PRIMARY MAIL</th>
-                    <th className="px-4 py-2">SECONDARY MAIL</th>
-                    <th className="px-4 py-2">ADDRESS</th>
-                    <th className="px-4 py-2">COUNTRY</th>
-                    <th className="px-4 py-2">CITY</th>
-                    <th className="px-4 py-2">POSTAL CODE</th>
-                    <th className="px-4 py-2">STATE</th>
-                    <th className="px-4 py-2">REMARKS</th>
-                    <th className="px-4 py-2">ACTION</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {role === "sales head"
-                    ? enquiryData.length > 0
-                      ? enquiryData.map((data) => (
-                          <tr key={data._id} className="border-t border-green-200">
-                            <td className="px-4 py-2">
-                              <input
-                                type="checkbox"
-                                checked={selectedEnquiries.includes(data.EnquiryNo)}
-                                onChange={() => handleSelectEnquiry(data.EnquiryNo)}
-                                className="mx-auto"
-                              />
-                            </td>
-                            <td className="px-4 py-2">{data?.LeadDetails?.companyName || "N/A"}</td>
-                            <td className="px-4 py-2">{data?.LeadDetails?.clientName || "N/A"}</td>
-                            <td className="px-4 py-2">{data?.LeadDetails?.Department || "N/A"}</td>
-                            <td className="px-4 py-2">{data?.LeadDetails?.LeadMedium || "N/A"}</td>
-                            <td className="px-4 py-2">{data?.LeadDetails?.LeadPriority || "N/A"}</td>
-                            <td className="px-4 py-2">{data?.LeadDetails?.EnquiryType || "N/A"}</td>
-                            <td className="px-4 py-2">{data?.LeadDetails?.Leadcondition || "N/A"}</td>
-                            <td className="px-4 py-2">{data?.ContactDetails?.MobileNumber || "N/A"}</td>
-                            <td className="px-4 py-2">{data?.ContactDetails?.AlternateMobileNumber || "N/A"}</td>
-                            <td className="px-4 py-2">{data?.ContactDetails?.PrimaryMail || "N/A"}</td>
-                            <td className="px-4 py-2">{data?.ContactDetails?.SecondaryMail || "N/A"}</td>
-                            <td className="px-4 py-2">{data?.AddressDetails?.Address || "N/A"}</td>
-                            <td className="px-4 py-2">{data?.AddressDetails?.Country || "N/A"}</td>
-                            <td className="px-4 py-2">{data?.AddressDetails?.City || "N/A"}</td>
-                            <td className="px-4 py-2">{data?.AddressDetails?.PostalCode || "N/A"}</td>
-                            <td className="px-4 py-2">{data?.AddressDetails?.State || "N/A"}</td>
-                            <td className="px-4 py-2">{data?.DescriptionDetails || "N/A"}</td>
-                            <td className="px-4 py-2">
-                              <button
-                                onClick={() => handleComplete(data._id)}
-                                className="py-1 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                              >
-                                Complete
-                              </button>
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={Quotation}
-                                  className="py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                                >
-                                  Quotation
-                                </button>
-                                <button
-                                  onClick={Salesorder}
-                                  className="py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                                >
-                                  Sales Order
-                                </button>
-                                <button
-                                  onClick={perfoma}
-                                  className="py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                                >
-                                  Perfoma
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      : (
-                        <tr>
-                          <td colSpan="17" className="text-center py-4">No Enquiries Available</td>
-                        </tr>
-                      )
-                    : saleEnquiryData.length > 0
-                    ? saleEnquiryData.map((data) => (
-                        <tr key={data._id} className="border-t border-green-200">
-                          <td className="px-4 py-2">{data?.LeadDetails?.companyName || "N/A"}</td>
-                          <td className="px-4 py-2">{data?.LeadDetails?.clientName || "N/A"}</td>
-                          <td className="px-4 py-2">{data?.LeadDetails?.Department || "N/A"}</td>
-                          <td className="px-4 py-2">{data?.LeadDetails?.LeadMedium || "N/A"}</td>
-                          <td className="px-4 py-2">{data?.LeadDetails?.LeadPriority || "N/A"}</td>
-                          <td className="px-4 py-2">{data?.LeadDetails?.EnquiryType || "N/A"}</td>
-                          <td className="px-4 py-2">{data?.LeadDetails?.Leadcondition || "N/A"}</td>
-                          <td className="px-4 py-2">{data?.ContactDetails?.MobileNumber || "N/A"}</td>
-                          <td className="px-4 py-2">{data?.ContactDetails?.AlternateMobileNumber || "N/A"}</td>
-                          <td className="px-4 py-2">{data?.ContactDetails?.PrimaryMail || "N/A"}</td>
-                          <td className="px-4 py-2">{data?.ContactDetails?.SecondaryMail || "N/A"}</td>
-                          <td className="px-4 py-2">{data?.AddressDetails?.Address || "N/A"}</td>
-                          <td className="px-4 py-2">{data?.AddressDetails?.Country || "N/A"}</td>
-                          <td className="px-4 py-2">{data?.AddressDetails?.City || "N/A"}</td>
-                          <td className="px-4 py-2">{data?.AddressDetails?.PostalCode || "N/A"}</td>
-                          <td className="px-4 py-2">{data?.AddressDetails?.State || "N/A"}</td>
-                          <td className="px-4 py-2">{data?.DescriptionDetails || "N/A"}</td>
-                          <td className="px-4 py-2">
-                            <button
-                              onClick={() => handleComplete(data._id)}
-                              className="py-1 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                            >
-                              Complete
-                            </button>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={Quotation}
-                                className="py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                              >
-                                Quotation
-                              </button>
-                              <button
-                                onClick={Salesorder}
-                                className="py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                              >
-                                Sales Order
-                              </button>
-                              <button
-                                onClick={perfoma}
-                                className="py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                              >
-                                Perfoma
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    : (
-                      <tr>
-                        <td colSpan="17" className="text-center py-4">No Enquiries Available</td>
+        <form onSubmit={handlesubmit} className="space-y-6">
+          {/* Table with header */}
+          <TableWrap>
+            <thead>
+              <tr>
+                {role === "sales head" && <Th>Select</Th>}
+                <Th>Company Name</Th>
+                <Th>Contact Person</Th>
+                <Th>Department</Th>
+                <Th>Lead Medium</Th>
+                <Th>Lead Priority</Th>
+                <Th>Enquiry Type</Th>
+                <Th>Lead Condition</Th>
+                <Th>Contact Number</Th>
+                <Th>Alternate Phone Number</Th>
+                <Th>Primary Mail</Th>
+                <Th>Secondary Mail</Th>
+                <Th>Address</Th>
+                <Th>Country</Th>
+                <Th>City</Th>
+                <Th>Postal Code</Th>
+                <Th>State</Th>
+                <Th>Remarks</Th>
+                <Th>Action</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {role === "sales head"
+                ? enquiryData.length > 0
+                  ? enquiryData.map((data) => (
+                      <tr key={data._id} className="hover:bg-slate-50">
+                        <Td>
+                          <input
+                            type="checkbox"
+                            checked={selectedEnquiries.includes(data.EnquiryNo)}
+                            onChange={() => handleSelectEnquiry(data.EnquiryNo)}
+                            className="mx-auto"
+                          />
+                        </Td>
+                        <Td className="font-medium text-slate-900">{data?.LeadDetails?.companyName || "N/A"}</Td>
+                        <Td>{data?.LeadDetails?.clientName || "N/A"}</Td>
+                        <Td>{data?.LeadDetails?.Department || "N/A"}</Td>
+                        <Td>{data?.LeadDetails?.LeadMedium || "N/A"}</Td>
+                        <Td>{data?.LeadDetails?.LeadPriority || "N/A"}</Td>
+                        <Td>{data?.LeadDetails?.EnquiryType || "N/A"}</Td>
+                        <Td>{data?.LeadDetails?.Leadcondition || "N/A"}</Td>
+                        <Td>{data?.ContactDetails?.MobileNumber || "N/A"}</Td>
+                        <Td>{data?.ContactDetails?.AlternateMobileNumber || "N/A"}</Td>
+                        <Td>{data?.ContactDetails?.PrimaryMail || "N/A"}</Td>
+                        <Td>{data?.ContactDetails?.SecondaryMail || "N/A"}</Td>
+                        <Td>{data?.AddressDetails?.Address || "N/A"}</Td>
+                        <Td>{data?.AddressDetails?.Country || "N/A"}</Td>
+                        <Td>{data?.AddressDetails?.City || "N/A"}</Td>
+                        <Td>{data?.AddressDetails?.PostalCode || "N/A"}</Td>
+                        <Td>{data?.AddressDetails?.State || "N/A"}</Td>
+                        <Td>{data?.DescriptionDetails || "N/A"}</Td>
+                        <Td>{actionButtons(data)}</Td>
                       </tr>
-                    )}
-                </tbody>
-              </table>
-            </div>
+                    ))
+                  : (
+                    <tr>
+                      <Td colSpan="19" className="text-center text-slate-500">No Enquiries Available</Td>
+                    </tr>
+                  )
+                : saleEnquiryData.length > 0
+                ? saleEnquiryData.map((data) => (
+                    <tr key={data._id} className="hover:bg-slate-50">
+                      <Td className="font-medium text-slate-900">{data?.LeadDetails?.companyName || "N/A"}</Td>
+                      <Td>{data?.LeadDetails?.clientName || "N/A"}</Td>
+                      <Td>{data?.LeadDetails?.Department || "N/A"}</Td>
+                      <Td>{data?.LeadDetails?.LeadMedium || "N/A"}</Td>
+                      <Td>{data?.LeadDetails?.LeadPriority || "N/A"}</Td>
+                      <Td>{data?.LeadDetails?.EnquiryType || "N/A"}</Td>
+                      <Td>{data?.LeadDetails?.Leadcondition || "N/A"}</Td>
+                      <Td>{data?.ContactDetails?.MobileNumber || "N/A"}</Td>
+                      <Td>{data?.ContactDetails?.AlternateMobileNumber || "N/A"}</Td>
+                      <Td>{data?.ContactDetails?.PrimaryMail || "N/A"}</Td>
+                      <Td>{data?.ContactDetails?.SecondaryMail || "N/A"}</Td>
+                      <Td>{data?.AddressDetails?.Address || "N/A"}</Td>
+                      <Td>{data?.AddressDetails?.Country || "N/A"}</Td>
+                      <Td>{data?.AddressDetails?.City || "N/A"}</Td>
+                      <Td>{data?.AddressDetails?.PostalCode || "N/A"}</Td>
+                      <Td>{data?.AddressDetails?.State || "N/A"}</Td>
+                      <Td>{data?.DescriptionDetails || "N/A"}</Td>
+                      <Td>{actionButtons(data)}</Td>
+                    </tr>
+                  ))
+                : (
+                  <tr>
+                    <Td colSpan="18" className="text-center text-slate-500">No Enquiries Available</Td>
+                  </tr>
+                )}
+            </tbody>
+          </TableWrap>
 
-            {role === "sales head" && (
-              <>
-                <div className="mt-4 flex flex-col space-y-4">
-                  <label className="font-medium text-green-600">Assigning Eid</label>
-                  <input
-                    type="text"
-                    name="Eid"
-                    value={EidToAssign}
-                    onChange={(e) => setEidToAssign(e.target.value)}
-                    className="p-3 border-2 border-green-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
-                  />
-                  <button
-                    type="submit"
-                    className="w-full py-3 text-white bg-green-600 rounded-lg hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105"
-                  >
-                    Assign
-                  </button>
-                </div>
-              </>
-            )}
-          </form>
-        </div>
-      </div>
+          {role === "sales head" && (
+            <Card className="max-w-md">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Assigning Eid</label>
+              <input
+                type="text"
+                name="Eid"
+                value={EidToAssign}
+                onChange={(e) => setEidToAssign(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+              />
+              <PrimaryButton type="submit" className="mt-4 w-full">
+                Assign
+              </PrimaryButton>
+            </Card>
+          )}
+        </form>
+      </PageShell>
     )
   );
 };

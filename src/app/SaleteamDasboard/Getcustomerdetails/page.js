@@ -2,7 +2,21 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { Users } from "lucide-react";
+import {
+  PageShell,
+  PageHeader,
+  Card,
+  SearchInput,
+  SecondaryButton,
+  TableWrap,
+  Th,
+  Td,
+  Badge,
+  LoadingBlock,
+  ErrorBanner,
+  EmptyState,
+} from "../../_components/ui";
 
 const Getcustomerdetails = () => {
   const router = useRouter();
@@ -63,147 +77,143 @@ const Getcustomerdetails = () => {
   };
 
   const handleBackClick = () => {
-    router.push('/SaleteamDasboard/Dasboard');
+    router.push("/SaleteamDasboard/Dasboard");
   };
 
-  const filteredConversations = conversations.filter(conversation => 
-    conversation.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    conversation.PANnumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    conversation.GSTNnumber.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredConversations = conversations.filter(
+    (conversation) =>
+      conversation.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      conversation.PANnumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      conversation.GSTNnumber.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-green-100 to-green-300">
-      <div className="w-full max-w-4xl p-8 space-y-6 bg-white rounded-xl shadow-2xl">
-        <h1 className="text-4xl font-bold text-center text-green-600">Completed Enquiries</h1>
-        <button
-          onClick={handleBackClick}
-          className="inline-flex items-center px-4 py-2 mb-6 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-            Back
-          </button>
+    <PageShell>
+      <PageHeader
+        eyebrow="Sales"
+        title="Customers"
+        subtitle="Converted enquiries and their company details."
+        onBack={handleBackClick}
+      />
 
-        {loading && <p className="text-center text-green-600">Loading...</p>}
-        {error && <p className="text-center text-red-600">{error}</p>}
+      {error && <ErrorBanner>{error}</ErrorBanner>}
+      {loading && <LoadingBlock label="Loading customers…" />}
 
-        {/* Show the search input only when the table is shown (not expanded) */}
-        {showTable && (
-          <div className="mb-4">
-            <input
-              type="text"
-              placeholder="Search by Company Name"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
-            />
-          </div>
-        )}
+      {/* Table view */}
+      {!loading && showTable && (
+        <>
+          <SearchInput
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by company, PAN or GSTN…"
+            className="max-w-md"
+          />
 
-        {showTable && filteredConversations.length > 0 ? (
-          <div className="overflow-auto max-h-96">
-            <table className="min-w-full table-auto">
+          {filteredConversations.length > 0 ? (
+            <TableWrap>
               <thead>
-                <tr className="bg-green-100">
-                  <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">PANnumber</th>
-                  <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">GSTNnumber</th>
-                  <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Company Name</th>
-                  <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Action</th>
+                <tr>
+                  <Th>PAN Number</Th>
+                  <Th>GSTN Number</Th>
+                  <Th>Company Name</Th>
+                  <Th>Action</Th>
                 </tr>
               </thead>
               <tbody>
                 {filteredConversations.map((conversation, index) => (
-                  <tr key={index} className="border-b hover:bg-green-50">
-                    <td className="px-4 py-2 text-sm text-gray-700">{conversation.PANnumber || 'N/A'}</td>
-                    <td className="px-4 py-2 text-sm text-gray-700">{conversation.GSTNnumber || 'N/A'}</td>
-                    <td className="px-4 py-2 text-sm text-gray-700">{conversation.companyName || 'N/A'}</td>
-                    <td className="px-4 py-2 text-sm text-gray-700">
+                  <tr key={index} className="hover:bg-slate-50">
+                    <Td>{conversation.PANnumber || "N/A"}</Td>
+                    <Td>{conversation.GSTNnumber || "N/A"}</Td>
+                    <Td className="font-medium text-slate-900">{conversation.companyName || "N/A"}</Td>
+                    <Td>
                       <button
                         onClick={() => toggleRowView(index, conversation)}
-                        className="text-green-500 hover:text-green-700 focus:outline-none"
+                        className="text-sm font-semibold text-blue-700 hover:text-blue-800 focus:outline-none"
                       >
-                        {expandedRow === index ? "View Less" : "View More"}
+                        View More
                       </button>
-                    </td>
+                    </Td>
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </div>
-        ) : (
-          showTable && (
-            <p className="text-center text-gray-600">No conversations to display</p>
-          )
-        )}
+            </TableWrap>
+          ) : (
+            !error && <EmptyState title="No customers to display" subtitle="Converted customers will appear here." />
+          )}
+        </>
+      )}
 
-        {/* Conditionally render expanded data */}
-        {expandedData && !showTable && expandedRow !== null && (
-          <div className="mt-6 p-4 border border-green-200 rounded-lg bg-green-50">
-            <h2 className="text-xl font-semibold text-green-600">Expanded Data</h2>
-            <div className="space-y-4 mt-4">
-              <div><strong>PANnumber:</strong> {expandedData.PANnumber || 'N/A'}</div>
-              <div><strong>GSTNnumber:</strong> {expandedData.GSTNnumber || 'N/A'}</div>
-              <div><strong>companyName:</strong> {expandedData.companyName || 'N/A'}</div>
-              <div><strong>Customer Address:</strong> {expandedData.AddressDetails?.Address || 'N/A'}</div>
-              <div><strong>Customer Country:</strong> {expandedData.AddressDetails?.Country || 'N/A'}</div>
-              <div><strong>Customer City:</strong> {expandedData.AddressDetails?.City || 'N/A'}</div>
-              <div><strong>Customer Postal Code:</strong> {expandedData.AddressDetails?.PostalCode || 'N/A'}</div>
-              <div><strong>Customer State:</strong> {expandedData.AddressDetails?.State || 'N/A'}</div>
-            </div>
-
-            {/* If there are conversion details, show them */}
-            {expandedData.customerconvert && expandedData.customerconvert.length > 0 && (
-              <div className="overflow-x-auto mt-4">
-                <h4 className="font-semibold">Customer Conversion Details:</h4>
-                <table className="min-w-full table-auto">
-                  <thead>
-                    <tr className="bg-green-100">
-                      <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Client Name</th>
-                      <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Mobile</th>
-                      <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Primary Email</th>
-                      <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Followup person</th>
-                      <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {expandedData.customerconvert.map((customer, idx) => (
-                      <tr key={idx} className="border-b hover:bg-green-50">
-                        <td className="px-4 py-2 text-sm text-gray-700">{customer?.clientName || 'N/A'}</td>
-                        <td className="px-4 py-2 text-sm text-gray-700">{customer?.CustomerDetails?.MobileNumber || 'N/A'}</td>
-                        <td className="px-4 py-2 text-sm text-gray-700">{customer?.CustomerDetails?.PrimaryMail || 'N/A'}</td>
-                        <td className="px-4 py-2 text-sm text-gray-700">{customer?.Eid || 'N/A'}</td>
-                        <td className="px-4 py-2 text-sm text-gray-700">{customer?.createdAt 
-    ? new Date(customer.createdAt).toLocaleDateString('en-GB') 
-    : 'N/A'
-  }</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+      {/* Expanded detail view */}
+      {expandedData && !showTable && expandedRow !== null && (
+        <Card>
+          <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-3">
+              <span className="rounded-lg bg-blue-50 p-2 text-blue-600">
+                <Users size={18} />
+              </span>
+              <div>
+                <h2 className="text-base font-semibold text-slate-900">{expandedData.companyName || "N/A"}</h2>
+                <p className="text-sm text-slate-500">Customer details</p>
               </div>
-            )}
-            <div className="mt-4 text-center">
-              <button
-                onClick={() => toggleRowView(expandedRow, expandedData)}
-                className="text-green-500 hover:text-green-700 focus:outline-none"
-              >
-                View Less
-              </button>
             </div>
+            <SecondaryButton onClick={() => toggleRowView(expandedRow, expandedData)}>View Less</SecondaryButton>
           </div>
-        )}
-      </div>
-    </div>
+
+          <div className="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2">
+            <DetailRow label="PAN Number" value={expandedData.PANnumber} />
+            <DetailRow label="GSTN Number" value={expandedData.GSTNnumber} />
+            <DetailRow label="Company Name" value={expandedData.companyName} />
+            <DetailRow label="Address" value={expandedData.AddressDetails?.Address} />
+            <DetailRow label="Country" value={expandedData.AddressDetails?.Country} />
+            <DetailRow label="City" value={expandedData.AddressDetails?.City} />
+            <DetailRow label="Postal Code" value={expandedData.AddressDetails?.PostalCode} />
+            <DetailRow label="State" value={expandedData.AddressDetails?.State} />
+          </div>
+
+          {expandedData.customerconvert && expandedData.customerconvert.length > 0 && (
+            <div className="mt-6">
+              <h4 className="mb-2 text-sm font-semibold text-slate-700">Customer Conversion Details</h4>
+              <TableWrap>
+                <thead>
+                  <tr>
+                    <Th>Client Name</Th>
+                    <Th>Mobile</Th>
+                    <Th>Primary Email</Th>
+                    <Th>Followup Person</Th>
+                    <Th>Date</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {expandedData.customerconvert.map((customer, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50">
+                      <Td className="font-medium text-slate-900">{customer?.clientName || "N/A"}</Td>
+                      <Td>{customer?.CustomerDetails?.MobileNumber || "N/A"}</Td>
+                      <Td>{customer?.CustomerDetails?.PrimaryMail || "N/A"}</Td>
+                      <Td>{customer?.Eid || "N/A"}</Td>
+                      <Td>
+                        {customer?.createdAt
+                          ? new Date(customer.createdAt).toLocaleDateString("en-GB")
+                          : "N/A"}
+                      </Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </TableWrap>
+            </div>
+          )}
+        </Card>
+      )}
+    </PageShell>
   );
 };
+
+function DetailRow({ label, value }) {
+  return (
+    <div className="flex flex-col gap-0.5 border-b border-slate-50 py-1.5">
+      <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">{label}</span>
+      <span className="text-sm text-slate-800">{value || "N/A"}</span>
+    </div>
+  );
+}
 
 export default Getcustomerdetails;

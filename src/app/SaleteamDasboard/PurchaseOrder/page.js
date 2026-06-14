@@ -3,7 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
-import { ChevronLeft, Plus, Save, ShoppingCart } from "lucide-react";
+import { Plus, Save } from "lucide-react";
+import {
+  PageShell,
+  PageHeader,
+  Card,
+  PrimaryButton,
+  SecondaryButton,
+  ErrorBanner,
+  TableWrap,
+  Th,
+  Td,
+} from "../../_components/ui";
 
 const PurchaseOrder = () => {
   const router = useRouter();
@@ -203,256 +214,231 @@ const PurchaseOrder = () => {
     }
   };
 
-  return (
-    <div className="max-w-5xl mx-auto p-8 bg-white shadow-lg rounded-xl">
-      <div className="flex items-center justify-between mb-8">
-        <button
-          onClick={() => router.push('/SaleteamDasboard/Inventory')}
-          className="inline-flex items-center px-4 py-2 mb-6 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-            Back
-          </button>
-        <h1 className="text-2xl font-bold text-gray-800 flex items-center">
-          <ShoppingCart className="mr-2" size={24} />
-          Create Purchase Order
-        </h1>
-        <div className="w-8" />
-      </div>
+  const fieldInputClass =
+    "w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100";
+  const fieldLabelClass =
+    "mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500";
+  const cellInputClass =
+    "w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100";
 
-      {errorMessage && (
-        <div className="bg-red-100 text-red-700 p-4 rounded-md mb-6 border border-red-300">
-          {errorMessage}
-        </div>
-      )}
+  return (
+    <PageShell>
+      <PageHeader
+        eyebrow="Procurement"
+        title="Create Purchase Order"
+        subtitle="Add line items, terms and supplier details to raise a PO."
+        onBack={() => router.push('/SaleteamDasboard/Inventory')}
+      />
+
+      {errorMessage && <ErrorBanner>{errorMessage}</ErrorBanner>}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="overflow-x-auto rounded-lg shadow">
-          <table className="w-full border-collapse">
-            <thead className="bg-gray-50">
-              <tr>
-                {["HSN Code", "UnitDescription","Description", "UOM", "Qty", "Unit Price", "Amount"].map((title) => (
-                  <th key={title} className="p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-                    {title}
-                  </th>
+        <TableWrap>
+          <thead>
+            <tr>
+              {["HSN Code", "UnitDescription", "Description", "UOM", "Qty", "Unit Price", "Amount"].map((title) => (
+                <Th key={title}>{title}</Th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {formData.rows.map((product, index) => (
+              <tr key={index} className="hover:bg-slate-50">
+                {["hsnCode", "unitDescription", "Description", "uom", "quantity", "unitPrice", "amount"].map((field) => (
+                  <Td key={field}>
+                    <input
+                      type={["quantity", "unitPrice"].includes(field) ? "number" : "text"}
+                      name={field}
+                      value={product[field]}
+                      onChange={(e) => handleProductChange(e, index)}
+                      readOnly={field === "amount"}
+                      className={field === "amount" ? `${cellInputClass} bg-slate-100` : cellInputClass}
+                      placeholder={field}
+                    />
+                  </Td>
                 ))}
               </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {formData.rows.map((product, index) => (
-                <tr key={index} className="hover:bg-gray-50">
-                  {["hsnCode", "unitDescription","Description", "uom", "quantity", "unitPrice", "amount"].map((field) => (
-                    <td key={field} className="p-3 text-sm">
-                      <input
-                        type={["quantity", "unitPrice"].includes(field) ? "number" : "text"}
-                        name={field}
-                        value={product[field]}
-                        onChange={(e) => handleProductChange(e, index)}
-                        readOnly={field === "amount"}
-                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                        placeholder={field}
-                      />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </TableWrap>
 
-        <button
-          type="button"
-          onClick={addProduct}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          <Plus size={16} className="mr-2" />
+        <SecondaryButton onClick={addProduct}>
+          <Plus size={16} />
           Add Product
-        </button>
+        </SecondaryButton>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {["paymentTerms", "warrantyTerms", "deliveryTerms"].map((term) => (
-            <div key={term} className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700 capitalize">
-                {term.replace("Terms", " Terms")}
-              </label>
-              <select
-                value={formData[term]}
-                onChange={(e) => handleSelectChange(e, term)}
-                className="w-full p-3 border border-gray-300 rounded-lg"
-              >
-                <option value="">Select option</option>
-                <option value="100% against proforma Invoice">100% against proforma Invoice</option>
-                <option value="100% against delivery">100% against delivery</option>
-                <option value="30 days PDC">30 days PDC</option>
-                <option value="50% advance & 50% against delivery">50% advance & 50% against delivery</option>
-                <option value="Others">Others</option>
-              </select>
+        <Card>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            {["paymentTerms", "warrantyTerms", "deliveryTerms"].map((term) => (
+              <div key={term}>
+                <label className={`${fieldLabelClass} capitalize`}>
+                  {term.replace("Terms", " Terms")}
+                </label>
+                <select
+                  value={formData[term]}
+                  onChange={(e) => handleSelectChange(e, term)}
+                  className={fieldInputClass}
+                >
+                  <option value="">Select option</option>
+                  <option value="100% against proforma Invoice">100% against proforma Invoice</option>
+                  <option value="100% against delivery">100% against delivery</option>
+                  <option value="30 days PDC">30 days PDC</option>
+                  <option value="50% advance & 50% against delivery">50% advance & 50% against delivery</option>
+                  <option value="Others">Others</option>
+                </select>
 
-              {formData[term] === "Others" && (
-                <input
-                  type="text"
-                  placeholder="Please specify"
-                  value={otherTerms[term]}
-                  onChange={(e) =>
-                    setOtherTerms((prev) => ({ ...prev, [term]: e.target.value }))
-                  }
-                  className="w-full p-3 border border-gray-300 rounded-lg"
-                />
-              )}
-            </div>
-          ))}
-        </div>
-    
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-6">
+                {formData[term] === "Others" && (
+                  <input
+                    type="text"
+                    placeholder="Please specify"
+                    value={otherTerms[term]}
+                    onChange={(e) =>
+                      setOtherTerms((prev) => ({ ...prev, [term]: e.target.value }))
+                    }
+                    className={`${fieldInputClass} mt-2`}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <Card className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Financial Year</label>
+              <label className={fieldLabelClass}>Financial Year</label>
               <input
                 type="text"
                 name="financialYear"
                 value={formData.financialYear}
                 onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg"
+                className={fieldInputClass}
                 placeholder="e.g., 24-25"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">GST (%)</label>
+              <label className={fieldLabelClass}>GST (%)</label>
               <input
                 type="number"
                 value={formData.gst}
                 onChange={handleGSTChange}
-                className="w-full p-3 border border-gray-300 rounded-lg"
+                className={fieldInputClass}
                 placeholder="Enter GST percentage"
               />
             </div>
             <div>
-  <label className="block text-sm font-medium text-gray-700">LP</label>
-  <input
-    type="text"
-    name="LP"
-    value={formData.LP}
-    onChange={handleInputChange}
-    className="w-full p-3 border border-gray-300 rounded-lg"
-    placeholder="Enter LP"
-  />
-</div>
+              <label className={fieldLabelClass}>LP</label>
+              <input
+                type="text"
+                name="LP"
+                value={formData.LP}
+                onChange={handleInputChange}
+                className={fieldInputClass}
+                placeholder="Enter LP"
+              />
+            </div>
 
-<div>
-  <label className="block text-sm font-medium text-gray-700">Discount (%)</label>
-  <input
-    type="number"
-    name="discount"
-    value={formData.discount}
-    onChange={handleInputChange}
-    className="w-full p-3 border border-gray-300 rounded-lg"
-    placeholder="Enter Discount Percentage"
-  />
-</div>
+            <div>
+              <label className={fieldLabelClass}>Discount (%)</label>
+              <input
+                type="number"
+                name="discount"
+                value={formData.discount}
+                onChange={handleInputChange}
+                className={fieldInputClass}
+                placeholder="Enter Discount Percentage"
+              />
+            </div>
+          </Card>
 
-          </div>
-
-          <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 space-y-4">
-            <h3 className="font-medium text-gray-700 border-b pb-2">Order Summary</h3>
-            <div className="flex justify-between">
+          <Card className="space-y-4">
+            <h3 className="border-b border-slate-100 pb-2 text-base font-semibold text-slate-900">Order Summary</h3>
+            <div className="flex justify-between text-sm text-slate-700">
               <span>Total Amount</span>
               <span>₹ {formData.totalAmount}</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between text-sm text-slate-700">
               <span>GST Amount</span>
               <span>₹ {formData.gstAmount}</span>
             </div>
-            <div className="flex justify-between font-bold pt-2 border-t">
+            <div className="flex justify-between border-t border-slate-100 pt-2 font-bold text-slate-900">
               <span>Total Payable</span>
               <span>₹ {formData.payableAmount}</span>
             </div>
-          </div>
+          </Card>
         </div>
 
-        <div className="space-y-4">
+        <Card className="space-y-4">
           <div>
-            <label>Address Details</label>
+            <label className={fieldLabelClass}>Address Details</label>
             <textarea
               name="Address"
               value={formData.Address}
               onChange={handleInputChange}
-              className="w-full p-3 border border-black rounded-md"
+              className={fieldInputClass}
             />
           </div>
           <div>
-            <label>Customer Name</label>
+            <label className={fieldLabelClass}>Customer Name</label>
             <input
               type="text"
               name="SupplierName"
               value={formData.SupplierName}
               onChange={handleInputChange}
-              className="w-full p-3 border border-black rounded-md"
+              className={fieldInputClass}
             />
           </div>
           <div>
-            <label>GSTIN/UIN</label>
+            <label className={fieldLabelClass}>GSTIN/UIN</label>
             <input
               type="text"
               name="GSTIN"
               value={formData.GSTIN}
               onChange={handleInputChange}
-              className="w-full p-3 border border-black rounded-md"
+              className={fieldInputClass}
             />
           </div>
-          
+
           <div>
-            <label>RefQNo</label>
+            <label className={fieldLabelClass}>RefQNo</label>
             <input
               type="text"
               name="RefQNo"
               value={formData.RefQNo}
               onChange={handleInputChange}
-              className="w-full p-3 border border-black rounded-md"
+              className={fieldInputClass}
             />
           </div>
           <div>
-            <label>QDate</label>
+            <label className={fieldLabelClass}>QDate</label>
             <input
               type="date"
               name="QDate"
               value={formData.QDate}
               onChange={handleInputChange}
-              className="w-full p-3 border border-black rounded-md"
+              className={fieldInputClass}
             />
           </div>
-        </div>
+        </Card>
 
-        <button
-          type="submit"
-          className="w-full py-3 px-4 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
-          disabled={loading}
-        >
+        <PrimaryButton type="submit" className="w-full" disabled={loading}>
           {loading ? (
-            <span className="flex items-center justify-center">
-              <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
+            <>
+              <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0..." />
               </svg>
               Processing...
-            </span>
+            </>
           ) : (
-            <span className="flex items-center justify-center">
-              <Save size={20} className="mr-2" />
+            <>
+              <Save size={16} />
               Submit Purchase Order
-            </span>
+            </>
           )}
-        </button>
+        </PrimaryButton>
       </form>
-    </div>
+    </PageShell>
   );
 };
 

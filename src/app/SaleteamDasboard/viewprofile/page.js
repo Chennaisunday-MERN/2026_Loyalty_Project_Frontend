@@ -1,27 +1,28 @@
 "use client";
-import { useEffect, useState } from 'react';
-import axios from 'axios';
-import { Mail, User, File, ChevronLeft } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { Mail, User, File as FileIcon, FileText, IdCard } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { PageShell, PageHeader, Card, Field, SecondaryButton } from "../../_components/ui";
 
 const ProfileView = () => {
-    const [Eid, setEid] = useState('');
-    const [role, setRole] = useState('');
-    const [token, setToken] = useState('');
+    const [Eid, setEid] = useState("");
+    const [role, setRole] = useState("");
+    const [token, setToken] = useState("");
     const [profileData, setProfileData] = useState({
-        name: '',
-        email: '',
-        Fileupload: '',
-        profileimg: ''
+        name: "",
+        email: "",
+        Fileupload: "",
+        profileimg: "",
     });
 
     const router = useRouter();
 
     useEffect(() => {
         // Load data from localStorage after component mounts
-        const storedId = localStorage.getItem('idstore');
-        const storedRole = localStorage.getItem('rolestore');
-        const storedToken = localStorage.getItem('admintokens');
+        const storedId = localStorage.getItem("idstore");
+        const storedRole = localStorage.getItem("rolestore");
+        const storedToken = localStorage.getItem("admintokens");
 
         setEid(storedId);
         setRole(storedRole);
@@ -33,138 +34,95 @@ const ProfileView = () => {
         }
 
         if (storedId) {
-            axios.get(`http://localhost:5005/api/commonprofile/${storedId}`, {
-                headers: {
-                    'Authorization': `Bearer ${storedToken}`,
-                    'Content-Type': 'multipart/form-data',
-                }
-            })
-                .then(response => {
+            axios
+                .get(`http://localhost:5005/api/commonprofile/${storedId}`, {
+                    headers: {
+                        Authorization: `Bearer ${storedToken}`,
+                        "Content-Type": "multipart/form-data",
+                    },
+                })
+                .then((response) => {
                     if (response.data && response.data.data) {
                         const fileUrl = response.data.fileUrl;
                         setProfileData({
                             name: response.data.data.name,
                             email: response.data.data.email,
                             Fileupload: fileUrl,
-                            profileimg: response.data.data.profileimg
+                            profileimg: response.data.data.profileimg,
                         });
                     } else {
-                        console.error('Unexpected response data:', response);
+                        console.error("Unexpected response data:", response);
                     }
                 })
-                .catch(error => {
-                    console.error('Error fetching profile data:', error);
+                .catch((error) => {
+                    console.error("Error fetching profile data:", error);
                 });
         }
     }, []);
 
     const fileUploadUrl = profileData.Fileupload
         ? `http://localhost:5005/api/uploads/${profileData.profileimg}`
-        : '';
+        : "";
 
-        const handleBackClick = () => {
-            const role = localStorage.getItem("role")?.trim().toLowerCase();
-          
-            if (role === "service engineer" || role === "engineer") {
-              router.push("/ServiceProject/Dasboard");
-            } else {
-              router.push("/SaleteamDasboard/Dasboard");
-            }
-          };
-          
+    const handleBackClick = () => {
+        const role = localStorage.getItem("role")?.trim().toLowerCase();
+
+        if (role === "service engineer" || role === "engineer") {
+            router.push("/ServiceProject/Dasboard");
+        } else {
+            router.push("/SaleteamDasboard/Dasboard");
+        }
+    };
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-green-100 to-green-300 py-10">
-            <div className="w-full max-w-lg p-10 space-y-8 bg-white rounded-3xl shadow-2xl relative">
-                {/* Back Button */}
-                <button
-                    onClick={handleBackClick}
-                    className="inline-flex items-center px-4 py-2 mb-6 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
->
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="h-5 w-5 mr-2"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth={2}
-  >
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-  </svg>
-  Back
-</button>
+        <PageShell>
+            <PageHeader
+                eyebrow="Account"
+                title="My Profile"
+                subtitle="Your account details and uploaded documents."
+                onBack={handleBackClick}
+            />
 
-                <h1 className="text-5xl font-bold text-center text-green-600 mb-6">Profile</h1>
-
-                <div className="space-y-6">
-                    <div className="relative">
-                        <label className="block text-lg font-medium text-gray-700 mb-2">E-Id</label>
-                        <div className="flex items-center border-2 border-green-300 rounded-xl p-3">
-                            <User className="text-green-500" size={24} />
-                            <input
-                                value={Eid}
-                                readOnly
-                                className="w-full pl-4 py-2 bg-transparent text-gray-700 text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="relative">
-                        <label className="block text-lg font-medium text-gray-700 mb-2">Name</label>
-                        <div className="flex items-center border-2 border-green-300 rounded-xl p-3">
-                            <User className="text-green-500" size={24} />
-                            <input
-                                value={profileData.name}
-                                readOnly
-                                className="w-full pl-4 py-2 bg-transparent text-gray-700 text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="relative">
-                        <label className="block text-lg font-medium text-gray-700 mb-2">Email</label>
-                        <div className="flex items-center border-2 border-green-300 rounded-xl p-3">
-                            <Mail className="text-green-500" size={24} />
-                            <input
-                                value={profileData.email}
-                                readOnly
-                                className="w-full pl-4 py-2 bg-transparent text-gray-700 text-lg font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="relative">
-                        <label className="block text-lg font-medium text-gray-700 mb-2">Profile Image</label>
-                        <div className="flex items-center border-2 border-green-300 rounded-xl p-3">
-                            {profileData.profileimg && (
-                                <img
-                                    src={fileUploadUrl}
-                                    alt="Profile"
-                                    className="w-24 h-24 object-cover rounded-full border-4 border-green-300"
-                                />
-                            )}
-                        </div>
-                    </div>
-
-                    {fileUploadUrl && (
-                        <div className="relative">
-                            <label className="block text-lg font-medium text-gray-700 mb-2">File Upload</label>
-                            <div className="flex items-center border-2 border-green-300 rounded-xl p-3">
-                                <File className="text-green-500" size={24} />
-                                <a
-                                    href={fileUploadUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-green-500 font-semibold pl-2 text-lg"
-                                >
-                                    View Uploaded File
-                                </a>
-                            </div>
+            <Card className="mx-auto max-w-2xl">
+                <div className="flex flex-col items-center gap-3 border-b border-slate-100 pb-6">
+                    {profileData.profileimg ? (
+                        <img
+                            src={fileUploadUrl}
+                            alt="Profile"
+                            className="h-28 w-28 rounded-full border-4 border-blue-100 object-cover shadow-sm"
+                        />
+                    ) : (
+                        <div className="flex h-28 w-28 items-center justify-center rounded-full border-4 border-blue-100 bg-blue-50 text-blue-500">
+                            <User size={40} />
                         </div>
                     )}
+                    <div className="text-center">
+                        <p className="text-lg font-semibold text-slate-900">{profileData.name || "—"}</p>
+                        <p className="text-sm text-slate-500">{role || "Sales"}</p>
+                    </div>
                 </div>
-            </div>
-        </div>
+
+                <div className="mt-6 space-y-4">
+                    <Field label="Employee ID" icon={IdCard}>{Eid || "—"}</Field>
+                    <Field label="Name" icon={User}>{profileData.name || "—"}</Field>
+                    <Field label="Email" icon={Mail}>{profileData.email || "—"}</Field>
+
+                    {fileUploadUrl && (
+                        <Field label="Uploaded Document" icon={FileIcon}>
+                            <a
+                                href={fileUploadUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 font-semibold text-blue-700 hover:text-blue-800"
+                            >
+                                <FileText size={15} />
+                                View Uploaded File
+                            </a>
+                        </Field>
+                    )}
+                </div>
+            </Card>
+        </PageShell>
     );
 };
 

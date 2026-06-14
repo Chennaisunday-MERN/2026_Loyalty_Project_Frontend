@@ -2,12 +2,19 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { Plus } from "lucide-react";
 import jsPDF from "jspdf";
 import { autoTable } from "jspdf-autotable";
+import {
+  PageShell,
+  PageHeader,
+  Card,
+  PrimaryButton,
+  SecondaryButton,
+} from "../../_components/ui";
 
 const Salesorder = () => {
-  const Eid = localStorage.getItem('idstore');
+  const Eid = typeof window !== "undefined" ? localStorage.getItem('idstore') : null;
   const [formData, setFormData] = useState({
     Eid,
     salesOrderDetails: {
@@ -461,32 +468,25 @@ const Salesorder = () => {
     router.push('/SaleteamDasboard/CustomerConverted');
   };
 
+  const fieldInputClass =
+    "w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100";
+  const fieldLabelClass =
+    "mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500";
+
   return (
-    <div className="container mx-auto p-6 bg-white shadow-xl rounded-lg">
-      <button 
-        onClick={handleBackClick} 
-        className="inline-flex items-center px-4 py-2 mb-6 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5 mr-2"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
-        Back
-      </button>
-      
-      <h1 className="text-4xl font-bold text-center text-indigo-600 mb-6">Create Sales Order</h1>
-      
-      <form onSubmit={handleSubmit} className="space-y-8">
+    <PageShell>
+      <PageHeader
+        eyebrow="Sales"
+        title="Create Sales Order"
+        subtitle="Capture order details, items and summary, then generate a PDF."
+        onBack={handleBackClick}
+      />
+
+      <form onSubmit={handleSubmit} className="space-y-6">
         {/* Sales Order Details */}
-        <section className="space-y-4">
-          <h3 className="text-2xl font-semibold text-gray-800">Sales Order Details</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Card>
+          <h3 className="text-base font-semibold text-slate-900">Sales Order Details</h3>
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
             {[
               "customerName",
               "quoteNumber",
@@ -498,7 +498,7 @@ const Salesorder = () => {
               "paymentTerms",
             ].map((field) => (
               <div key={field}>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className={fieldLabelClass}>
                   {field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')}
                 </label>
                 <input
@@ -506,22 +506,22 @@ const Salesorder = () => {
                   name={`salesOrderDetails.${field}`}
                   value={formData.salesOrderDetails[field] || ""}
                   onChange={handleChange}
-                  className="mt-1 block w-full p-2 border rounded-md shadow-sm"
+                  className={fieldInputClass}
                   required
                 />
               </div>
             ))}
-            
+
             {/* Status as a dropdown with custom option */}
             <div>
-              <label className="block text-sm font-medium text-gray-700">Status</label>
+              <label className={fieldLabelClass}>Status</label>
               <select
                 name="salesOrderDetails.status"
-                value={["Pending", "Confirmed", "Shipped", "Delivered"].includes(formData.salesOrderDetails.status) 
-                  ? formData.salesOrderDetails.status 
+                value={["Pending", "Confirmed", "Shipped", "Delivered"].includes(formData.salesOrderDetails.status)
+                  ? formData.salesOrderDetails.status
                   : "Custom"}
                 onChange={handleChange}
-                className="mt-1 block w-full p-2 border rounded-md shadow-sm"
+                className={fieldInputClass}
                 required
               >
                 <option value="Pending">Pending</option>
@@ -529,92 +529,91 @@ const Salesorder = () => {
                 <option value="Shipped">Shipped</option>
                 <option value="Delivered">Delivered</option>
               </select>
-              
+
               {/* Show custom status input if "Custom" is selected */}
               {!["Pending", "Confirmed", "Shipped", "Delivered"].includes(formData.salesOrderDetails.status) && (
-                <div className="mt-2">
-                  <input
-                    type="text"
-                    name="salesOrderDetails.customStatus"
-                    value={formData.salesOrderDetails.customStatus}
-                    onChange={handleChange}
-                    placeholder="Enter custom status"
-                    className="block w-full p-2 border rounded-md shadow-sm"
-                    required
-                  />
-                </div>
+                <input
+                  type="text"
+                  name="salesOrderDetails.customStatus"
+                  value={formData.salesOrderDetails.customStatus}
+                  onChange={handleChange}
+                  placeholder="Enter custom status"
+                  className={`${fieldInputClass} mt-2`}
+                  required
+                />
               )}
             </div>
           </div>
-        </section>
+        </Card>
 
         {/* Terms and Conditions */}
-        <section className="space-y-4">
-          <h3 className="text-2xl font-semibold text-gray-800">Terms and Conditions</h3>
+        <Card>
+          <h3 className="text-base font-semibold text-slate-900">Terms and Conditions</h3>
           <textarea
             name="termsAndConditions.text"
             value={formData.termsAndConditions.text}
             onChange={handleChange}
-            className="mt-1 block w-full p-2 border rounded-md"
+            className={`${fieldInputClass} mt-4`}
             rows="5"
             placeholder="Enter Terms and Conditions"
           />
-        </section>
+        </Card>
 
         {/* Items */}
-        <section className="space-y-4">
-          <h3 className="text-2xl font-semibold text-gray-800">Items</h3>
-          {formData.items.map((item, index) => (
-            <div key={index} className="grid grid-cols-1 sm:grid-cols-6 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Item Name</label>
-                <select
-                  className="mt-1 block w-full p-2 border rounded-md"
-                  value={item.itemName}
-                  onChange={(e) => handleItemSelect(e, index)}
-                >
-                  <option value="">Select Item</option>
-                  {products.map((product, i) => (
-                    <option key={i} value={product.Model}>
-                      {product.Model}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {["quantity", "listPrice", "discount", "tax", "totalPrice"].map((field) => (
-                <div key={field}>
-                  <label className="block text-sm font-medium text-gray-700">
-                    {field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')}
-                  </label>
-                  <input
-                    type="number"
-                    value={item[field]}
-                    onChange={(e) => handleNestedChange(e, index, field)}
-                    className="mt-1 block w-full p-2 border rounded-md"
-                    required={field !== "discount" && field !== "tax"}
-                    readOnly={field === "totalPrice"}
-                  />
+        <Card>
+          <h3 className="text-base font-semibold text-slate-900">Items</h3>
+          <div className="mt-4 space-y-4">
+            {formData.items.map((item, index) => (
+              <div key={index} className="grid grid-cols-1 gap-4 sm:grid-cols-6">
+                <div>
+                  <label className={fieldLabelClass}>Item Name</label>
+                  <select
+                    className={fieldInputClass}
+                    value={item.itemName}
+                    onChange={(e) => handleItemSelect(e, index)}
+                  >
+                    <option value="">Select Item</option>
+                    {products.map((product, i) => (
+                      <option key={i} value={product.Model}>
+                        {product.Model}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              ))}
-            </div>
-          ))}
-          <button
-            type="button"
-            onClick={handleAddItem}
-            className="mt-4 py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            Add Item
-          </button>
-        </section>
+                {["quantity", "listPrice", "discount", "tax", "totalPrice"].map((field) => (
+                  <div key={field}>
+                    <label className={fieldLabelClass}>
+                      {field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')}
+                    </label>
+                    <input
+                      type="number"
+                      value={item[field]}
+                      onChange={(e) => handleNestedChange(e, index, field)}
+                      className={field === "totalPrice" ? `${fieldInputClass} bg-slate-100` : fieldInputClass}
+                      required={field !== "discount" && field !== "tax"}
+                      readOnly={field === "totalPrice"}
+                    />
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+          <div className="mt-4">
+            <SecondaryButton onClick={handleAddItem}>
+              <Plus size={16} />
+              Add Item
+            </SecondaryButton>
+          </div>
+        </Card>
 
         {/* Summary */}
-        <section className="space-y-4">
-          <h3 className="text-2xl font-semibold text-gray-800">Summary</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {["itemsTotal", "discountTotal", "shippingHandling", "preTaxTotal", "taxesForShipping", 
+        <Card>
+          <h3 className="text-base font-semibold text-slate-900">Summary</h3>
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {["itemsTotal", "discountTotal", "shippingHandling", "preTaxTotal", "taxesForShipping",
               "transitInsurance", "installationCharges", "taxForInstallation", "adjustments", "grandTotal"].map((field) => (
               <div key={field}>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className={fieldLabelClass}>
                   {field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')}
                 </label>
                 <input
@@ -622,25 +621,22 @@ const Salesorder = () => {
                   name={`summary.${field}`}
                   value={formData.summary[field]}
                   onChange={handleChange}
-                  className="mt-1 block w-full p-2 border rounded-md"
+                  className={fieldInputClass}
                   required
                 />
               </div>
             ))}
           </div>
-        </section>
-        
+        </Card>
+
         {/* Submit Button */}
-        <div className="flex justify-center">
-          <button
-            type="submit"
-            className="py-3 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-md hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-lg"
-          >
-            Submit & Generate PDF
-          </button>
+        <div className="flex justify-end">
+          <PrimaryButton type="submit">
+            Submit &amp; Generate PDF
+          </PrimaryButton>
         </div>
       </form>
-    </div>
+    </PageShell>
   );
 };
 
